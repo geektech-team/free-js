@@ -12,7 +12,7 @@ const app = new FreeApp({
 //     path: "/",
 //     component: new Component({
 //         name: "home",
-//         elements: [
+//         children: [
 //             new Div([
 //                 "Hello World"
 //             ])

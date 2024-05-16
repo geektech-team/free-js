@@ -1,24 +1,27 @@
+import { Component } from "../component";
+
 export abstract class Element {
     public parent: Element | null = null;
     public tagName: string = '';
     public $dom: HTMLElement;
-    public elements: Array<Element | string> = [];
-    constructor(options: { elements: Array<Element | string>, $dom?: HTMLElement | null, tagName?: keyof HTMLElementTagNameMap }) {
+    public children: Array<Element | Component | string> = [];
+    constructor(options: { children: Array<Element | Component | string>, $dom?: HTMLElement | null, tagName?: keyof HTMLElementTagNameMap }) {
         this.$dom = options.$dom ?? document.createElement(options.tagName as keyof HTMLElementTagNameMap);
-        this.elements = options.elements ?? [];
+        this.children = options.children ?? [];
     }
-    render() {
-        this.elements.forEach(element => {
-            if (typeof element === 'string') {
-                // parent.append;
-                this.$dom.append(element);
-            } else {
-                this.$dom.append(element.render())
+    render(children?: Array<Element | Component | string>) {
+        const elements = children ?? this.children;
+        elements.forEach(child => {
+            if (typeof child === 'string') {
+                this.$dom.append(child);
+            } else if (child instanceof Component) {
+                child.parent = this;
+                this.render(child.children)
+            } else if (child instanceof Element) {
+                child.parent = this;
+                this.$dom.append(child.render())
             }
         });
         return this.$dom;
-    }
-    unshift(element: Element) {
-       this.elements.unshift(element);
     }
 }

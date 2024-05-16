@@ -1,9 +1,9 @@
 import { Element } from "./element";
 
 export class Div extends Element {
-    constructor(options?: { elements: (string | Element)[] }) {
+    constructor(options?: { children: (string | Element)[] }) {
         super({
-            elements: options?.elements ?? [],
+            children: options?.children ?? [],
             tagName: 'div'
         });
     }

@@ -1,5 +1,6 @@
+import { Component } from "../component";
 import { Element } from "../element/element";
 
 export default interface App {
-    elements: Array<Element | string>;
+    children: Array<Element | Component | string>;
 }

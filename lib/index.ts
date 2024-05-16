@@ -9,7 +9,7 @@ export class FreeApp {
         app: App;
     }) {
         this.title = options.title;
-        const container = new Container({title: this.title, elements: options.app.elements});
+        const container = new Container({title: this.title, children: options.app.children});
         container.render();
     }
     use(pligin: any) {
