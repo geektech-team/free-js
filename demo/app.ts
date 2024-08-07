@@ -1,10 +1,10 @@
 import { Div } from "../lib/element/div";
 import App from "../lib/core/app";
-import { Test } from "./components/test";
+import { Home } from "./components/home";
 
 export default class AppContainer implements App {
     public children = [
-        new Test(),
+        new Home(),
         new Div({children:[
             'text1',
             new Div()

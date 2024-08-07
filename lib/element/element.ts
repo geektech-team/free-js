@@ -5,8 +5,16 @@ export abstract class Element {
     public tagName: string = '';
     public $dom: HTMLElement;
     public children: Array<Element | Component | string> = [];
-    constructor(options: { children: Array<Element | Component | string>, $dom?: HTMLElement | null, tagName?: keyof HTMLElementTagNameMap }) {
+    constructor(options: { 
+        children: Array<Element | Component | string>, 
+        $dom?: HTMLElement | null, 
+        tagName?: keyof HTMLElementTagNameMap, 
+        click?: (this: HTMLElement, ev: MouseEvent) => any
+    }) {
         this.$dom = options.$dom ?? document.createElement(options.tagName as keyof HTMLElementTagNameMap);
+        if(options.click) {
+            this.$dom.addEventListener('click', options.click);
+        } 
         this.children = options.children ?? [];
     }
     render(children?: Array<Element | Component | string>) {
