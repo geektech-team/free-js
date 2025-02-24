@@ -1,25 +1,12 @@
-import App from "./core/app";
-import { Container } from "./core/container";
-import { Element } from "./element/element";
+import { AppOptions, FreeApp } from './core/app';
 
-export class FreeApp {
-    public title: string;
-    constructor(options: {
-        title: string;
-        app: App;
-    }) {
-        this.title = options.title;
-        const container = new Container({title: this.title, children: options.app.children});
-        container.render();
-    }
-    use(pligin: any) {
-        pligin.install(this)
-    }
-    compile() {
-        // container.render()
-    }
-    run(){
-        // this.compile();
-        console.log('run')
-    }
+export * from './core/reactive';
+export * from './core/vnode';
+export * from './core/component';
+export * from './style/StyleManager';
+export * from './router/instance';
+
+
+export function createApp(options: AppOptions = {}): FreeApp {
+  return new FreeApp(options);
 }

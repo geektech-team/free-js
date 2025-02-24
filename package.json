@@ -16,11 +16,12 @@
     "require": "./dist/index.umd.cjs"
   },
   "scripts": {
-    "dev": "vite",
-    "build": "tsc && vite build"
+    "dev": "vite examples",
+    "build": "tsc && vite build",
+    "preview": "vite preview"
   },
   "devDependencies": {
-    "typescript": "^5.4.5",
-    "vite": "^5.2.11"
+    "typescript": "^5.0.0",
+    "vite": "^4.0.0"
   }
 }
