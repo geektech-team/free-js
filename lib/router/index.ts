@@ -8,7 +8,7 @@ export interface RouteRecord {
 }
 
 export class Router {
-  private currentRoute: RouteRecord | null = null;
+  protected currentRoute: RouteRecord | null = null;
   private routes: RouteRecord[] = [];
   private app: FreeApp | null = null;
 

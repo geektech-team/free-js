@@ -20,10 +20,18 @@ export class ReactiveSystem {
   }
 
   public reactive<T extends object>(target: T): T {
+    if ((target as any).__isReactive) {
+      return target;
+    }
+
     return new Proxy(target, {
       get: (target, key: string) => {
         this.track(target, key);
-        return Reflect.get(target, key);
+        const value = Reflect.get(target, key);
+        if (value && typeof value === 'object') {
+          return this.reactive(value);
+        }
+        return value;
       },
       set: (target, key: string, value) => {
         const result = Reflect.set(target, key, value);
@@ -80,11 +88,4 @@ export function reactive<T extends object>(target: T): T {
 
 export function effect(fn: () => void): void {
   ReactiveSystem.getInstance().effect(fn);
-}
-
-// 更新DOM的函数，这里只是示例，具体实现需要根据实际情况
-function updateDOM(key: string, value: string) {
-  if (key === 'textContent') {
-    document.body.textContent = value;
-  }
 }

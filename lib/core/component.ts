@@ -8,9 +8,9 @@ export abstract class Component {
   protected styleManager: StyleManager;
   private templateEngine!: TemplateEngine;
   protected state: any = {};
-  private mounted = false;
+  protected mounted = false;
 
-  constructor(private props: Record<string, any> = {}) {
+  constructor(protected props: Record<string, any> = {}) {
     this.styleManager = new StyleManager();
     this.state = reactive(this.initState() ?? {});
     this.initStyles();
@@ -72,5 +72,13 @@ export abstract class Component {
 
   protected get router() {
     return (globalThis as any).__APP__?.router;
+  }
+
+  public unmount(): void {
+    // 清理事件监听器
+    this.templateEngine.clearBindings();
+    // 清理样式
+    this.styleManager.clearStyles();
+    this.mounted = false;
   }
 } 

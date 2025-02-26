@@ -16,6 +16,12 @@ export class FreeApp {
     this.container = document.body;
   }
 
+  private handleError(error: Error): void {
+    console.error('应用错误:', error);
+    // 可以在这里添加错误UI渲染
+    this.unmount();
+  }
+
   public mount(): void {
     if (this.mounted) {
       console.warn('应用已经处于运行状态');
@@ -32,8 +38,7 @@ export class FreeApp {
       }
       this.mounted = true;
     } catch (error) {
-      console.error('应用启动失败:', error);
-      throw error;
+      this.handleError(error as Error);
     }
   }
 
