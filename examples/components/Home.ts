@@ -1,11 +1,24 @@
 import { Component, VNode } from '../../lib';
 import { StyleOptions } from '../../lib/style/StyleManager';
-import { useRouter } from '../../lib/router/instance';
+import { Navigation } from './Navigation';
+import { TextInput } from './TextInput';
+
+interface NavLink {
+  path: string;
+  text: string;
+}
 
 export class Home extends Component {
   protected initState() {
     return {
-      title: '欢迎使用 Free Framework'
+      title: '欢迎使用 Free Framework',
+      navigationLinks: [
+        { path: '/', text: '首页' },
+        { path: '/counter', text: '计数器' },
+        { path: '/about', text: '关于' }
+      ],
+      lastNavigation: '',
+      inputValue: '',
     };
   }
 
@@ -29,59 +42,103 @@ export class Home extends Component {
       }
     };
 
-    const linkStyles: StyleOptions = {
-      selector: '.home .nav-link',
+    const contentStyles: StyleOptions = {
+      selector: '.home .content',
       properties: {
-        display: 'inline-block',
-        padding: '10px 20px',
-        margin: '10px',
-        color: '#fff',
-        backgroundColor: '#42b983',
+        marginTop: '30px',
+        fontSize: '1.2em',
+        color: '#666'
+      }
+    };
+
+    const navigationInfoStyles: StyleOptions = {
+      selector: '.home .navigation-info',
+      properties: {
+        marginTop: '20px',
+        padding: '10px',
+        backgroundColor: '#f8f9fa',
         borderRadius: '4px',
-        textDecoration: 'none',
-        transition: 'background-color 0.3s'
-      },
-      hover: {
-        backgroundColor: '#3aa876'
+        color: '#666',
+        fontSize: '0.9em'
+      }
+    };
+
+    const messageItemStyles: StyleOptions = {
+      selector: '.home .message-item',
+      properties: {
+        padding: '8px',
+        margin: '4px 0',
+        backgroundColor: '#fff',
+        borderRadius: '4px',
+        boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+        textAlign: 'left'
       }
     };
 
     this.styleManager.addStyle('home', homeStyles);
     this.styleManager.addStyle('title', titleStyles);
-    this.styleManager.addStyle('link', linkStyles);
+    this.styleManager.addStyle('content', contentStyles);
+    this.styleManager.addStyle('navigationInfo', navigationInfoStyles);
+    this.styleManager.addStyle('messageItem', messageItemStyles);
   }
 
+  private handleNavigation(path: string): void {
+    this.state.lastNavigation = `上次导航到: ${path} (${new Date().toLocaleTimeString()})`;
+  }
+
+  private handleInputChange(value: string): void {
+    this.state.inputValue = value;
+  }
+
+
   protected render(): VNode {
-    const router = useRouter();
-    
     return {
-      type: 'div',
+      tag: 'div',
       props: { class: 'home' },
       children: [
         {
-          type: 'h1',
+          tag: 'h1',
           props: {},
           children: ['{{title}}']
         },
         {
-          type: 'div',
-          props: {},
+          component: Navigation,
+          props: {
+            links: this.state.navigationLinks,
+            onNavigate: (path: string) => this.handleNavigation(path)
+          },
+          children: []
+        },
+        {
+          tag: 'div',
+          props: { class: 'content' },
           children: [
-            {
-              type: 'a',
-              props: { 
-                class: 'nav-link',
-                href: '/counter'
-              },
-              listeners: {
-                click: (e: Event) => {
-                  e.preventDefault();
-                  router.push('/counter');
-                }
-              },
-              children: ['查看计数器示例']
-            }
+            '这是一个轻量级的前端框架示例，展示了组件化、响应式状态管理、路由等功能。'
           ]
+        },
+        {
+          component: TextInput,
+          props: {
+            value: this.state.inputValue,
+            placeholder: '请输入消息...',
+            label: '发送消息',
+            onChange: (value: string) => this.handleInputChange(value),
+            onEnter: (value: string) => this.handleInputEnter(value)
+          },
+          children: []
+        },
+        {
+          tag: 'div',
+          props: { class: 'navigation-info' },
+          children: ['{{lastNavigation}}']
+        },
+        {
+          tag: 'div',
+          children: ['{{inputValue}}']
+        },
+        {
+          tag: 'div',
+          children: [this.state.inputValue]
         }
       ]
     };

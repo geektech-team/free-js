@@ -1,0 +1,13 @@
+.git
+.gitignore
+.DS_Store
+node_modules
+coverage
+examples
+jest.config.ts
+vite.config.ts
+tsconfig.json
+pnpm-lock.yaml
+*.log
+.npmrc
+.env* 

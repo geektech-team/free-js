@@ -24,6 +24,11 @@ export class StyleManager {
     this.updateStyles();
   }
 
+  public clearStyles(): void {
+    this.styles.clear();
+    this.styleElement.textContent = '';
+  }
+
   private convertToCSS(properties: Record<string, string | number>): string {
     return Object.entries(properties)
       .map(([key, value]) => {

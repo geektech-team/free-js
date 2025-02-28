@@ -48,16 +48,16 @@ export class Counter extends Component {
 
   protected render(): VNode {
     return {
-      type: 'div',
+      tag: 'div',
       props: { class: 'counter' },
       children: [
         {
-          type: 'h2',
+          tag: 'h2',
           props: {},
           children: ['计数器: {{count}}']
         },
         {
-          type: 'button',
+          tag: 'button',
           props: {},
           listeners: {
             click: () => {

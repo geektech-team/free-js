@@ -1,7 +1,11 @@
 {
   "name": "free-js",
-  "private": true,
-  "version": "0.0.0",
+  "private": false,
+  "version": "0.0.1",
+  "description": "A lightweight JavaScript utility library",
+  "author": "Max",
+  "license": "MIT",
+  "keywords": ["javascript", "framework", "typescript"],
   "type": "module",
   "files": [
     "dist",
@@ -21,7 +25,8 @@
     "preview": "vite preview",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "node --experimental-vm-modules node_modules/jest/bin/jest.js --watch",
-    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage"
+    "test:coverage": "node --experimental-vm-modules node_modules/jest/bin/jest.js --coverage",
+    "prepublishOnly": "pnpm run build"
   },
   "devDependencies": {
     "@jest/types": "^29.6.3",
