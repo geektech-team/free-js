@@ -77,11 +77,6 @@ export class TextInput extends Component {
     }
   }
 
-  private handleKeyPress(e: KeyboardEvent): void {
-    if (e.key === 'Enter' && this.props.onEnter) {
-    //   this.props.onEnter(this.state.value);
-    }
-  }
 
   protected render(): VNode {
     return {
@@ -103,12 +98,11 @@ export class TextInput extends Component {
           },
           listeners: {
             input: (e: Event) => this.handleInput(e),
-            keypress: (e: KeyboardEvent) => this.handleKeyPress(e),
             focus: () => this.state.isFocused = true,
             blur: () => this.state.isFocused = false
           }
         }
-      ].filter(Boolean) as VNode[]
+      ]
     };
   }
 } 

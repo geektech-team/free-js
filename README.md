@@ -1,6 +1,6 @@
 # free-js
 
-一个轻量级的 JavaScript 工具库，使用 TypeScript 编写。
+一个轻量级的 前端框架，使用 TypeScript 编写。
 
 ## 安装
 

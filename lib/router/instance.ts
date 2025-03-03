@@ -9,7 +9,7 @@ export function setRouter(r: Router) {
 
 export function useRouter(): Router {
   if (!router) {
-    throw new Error('Router is not initialized. Make sure to call app.use(router) first.');
+    throw new Error('Router is not initialized');
   }
   return router;
-} 
+}

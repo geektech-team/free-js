@@ -6,8 +6,8 @@ export interface StyleOptions {
 }
 
 export class StyleManager {
-  private styleElement: HTMLStyleElement;
-  private styles: Map<string, StyleOptions> = new Map();
+  public styleElement: HTMLStyleElement;
+  public styles: Map<string, StyleOptions> = new Map();
 
   constructor() {
     this.styleElement = document.createElement('style');
@@ -60,4 +60,4 @@ export class StyleManager {
 
     this.styleElement.textContent = cssText;
   }
-} 
+}

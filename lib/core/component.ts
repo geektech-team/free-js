@@ -3,14 +3,12 @@ import { StyleManager } from '../style/StyleManager';
 import { TemplateEngine } from './template';
 import { reactive } from './reactive';
 
-type ComponentConstructor = new (props: Record<string, any>) => Component;
-
 export abstract class Component {
   private vnode: VNode | null = null;
   private el: HTMLElement | null = null;
   protected styleManager: StyleManager;
   private templateEngine!: TemplateEngine;
-  protected state: any = {};
+  public state: any = {};
   protected mounted = false;
   private childComponents: Component[] = [];
 
@@ -19,6 +17,19 @@ export abstract class Component {
     this.state = reactive(this.initState() ?? {});
     this.initStyles();
     this.templateEngine = new TemplateEngine(this.state);
+
+    // 监听状态变化，触发重新渲染
+    const proxyHandler = {
+      set: (target: any, key: string, value: any) => {
+        const result = Reflect.set(target, key, value);
+        if (result && this.mounted) {
+          this.update();
+        }
+        return result;
+      }
+    };
+
+    this.state = new Proxy(this.state, proxyHandler);
   }
 
   protected abstract initState(): object;
@@ -26,10 +37,14 @@ export abstract class Component {
   protected abstract render(): VNode;
 
   public mount(container: HTMLElement): void {
-    this.vnode = this.render();
-    this.el = this.createDOM(this.vnode);
-    container.appendChild(this.el);
-    this.mounted = true;
+    try {
+      this.vnode = this.render();
+      this.el = this.createDOM(this.vnode);
+      container.appendChild(this.el);
+      this.mounted = true;
+    } catch (error) {
+      console.error('组件渲染错误:', error);
+    }
   }
 
   protected update(): void {
@@ -97,6 +112,11 @@ export abstract class Component {
     this.templateEngine.clearBindings();
     // 清理样式
     this.styleManager.clearStyles();
+    // 从 DOM 中移除元素
+    if (this.el && this.el.parentElement) {
+      this.el.parentElement.removeChild(this.el);
+      this.el = null;
+    }
     this.mounted = false;
   }
-} 
+}

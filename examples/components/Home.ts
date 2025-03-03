@@ -121,9 +121,8 @@ export class Home extends Component {
           props: {
             value: this.state.inputValue,
             placeholder: '请输入消息...',
-            label: '发送消息',
+            label: '消息',
             onChange: (value: string) => this.handleInputChange(value),
-            onEnter: (value: string) => this.handleInputEnter(value)
           },
           children: []
         },
