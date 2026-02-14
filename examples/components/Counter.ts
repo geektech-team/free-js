@@ -1,13 +1,33 @@
-import { Component, VNode, reactive } from '../../lib';
+import { Component, VNode, reactive, computed } from '../../lib';
 import { StyleOptions } from '../../lib/style/StyleManager';
 
-export class Counter extends Component {
+export interface CounterProps {
+  initialCount?: number;
+  step?: number;
+}
+
+export class Counter extends Component<any> {
+  // 使用响应式状态
+    public state = reactive({
+      count: 0
+    });
+  
+  // 计算属性
+  private doubleCount = computed(() => this.state.count * 2);
+  
+  constructor(props?: CounterProps) {
+    super(props || {});
+    // 初始化状态
+    this.state.count = this.props?.initialCount || 0;
+  }
+  
+  // 初始化状态
   protected initState() {
     return {
       count: 0
-    }
+    };
   }
-
+  
   protected initStyles(): void {
     const counterStyles: StyleOptions = {
       selector: '.counter',
@@ -17,12 +37,15 @@ export class Counter extends Component {
         padding: '20px',
         border: '1px solid #ccc',
         borderRadius: '4px',
-        textAlign: 'center'
+        textAlign: 'center',
+        backgroundColor: '#fff',
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
       },
       media: {
         '(max-width: 768px)': {
           maxWidth: '100%',
-          margin: '10px'
+          margin: '10px',
+          padding: '15px'
         }
       }
     };
@@ -35,38 +58,128 @@ export class Counter extends Component {
         color: 'white',
         border: 'none',
         borderRadius: '4px',
-        cursor: 'pointer'
+        cursor: 'pointer',
+        margin: '0 5px',
+        fontSize: '16px',
+        transition: 'background-color 0.3s ease'
       },
       hover: {
         background: '#45a049'
       }
     };
 
+    const countStyles: StyleOptions = {
+      selector: '.counter-count',
+      properties: {
+        fontSize: '48px',
+        fontWeight: 'bold',
+        color: '#333',
+        margin: '20px 0'
+      }
+    };
+
+    const doubleCountStyles: StyleOptions = {
+      selector: '.double-count',
+      properties: {
+        fontSize: '18px',
+        color: '#666',
+        marginTop: '10px'
+      }
+    };
+
     this.styleManager.addStyle('counter', counterStyles);
     this.styleManager.addStyle('button', buttonStyles);
+    this.styleManager.addStyle('count', countStyles);
+    this.styleManager.addStyle('double-count', doubleCountStyles);
+  }
+
+  /**
+   * 增加计数
+   */
+  private increment(): void {
+    const step = this.props.step || 1;
+    this.state.count += step;
+  }
+
+  /**
+   * 减少计数
+   */
+  private decrement(): void {
+    const step = this.props.step || 1;
+    this.state.count -= step;
+  }
+
+  /**
+   * 重置计数
+   */
+  private reset(): void {
+    this.state.count = this.props.initialCount || 0;
   }
 
   protected render(): VNode {
     return {
       tag: 'div',
-      props: { class: 'counter' },
+      props: {
+        className: 'counter'
+      },
       children: [
-        {
-          tag: 'h2',
-          props: {},
-          children: ['计数器: {{count}}']
+        { tag: 'h2', props: {}, children: ['计数器示例'] },
+        { 
+          tag: 'div', 
+          props: { className: 'counter-count' }, 
+          children: [String(this.state.count)] 
         },
         {
-          tag: 'button',
+          tag: 'div',
+          props: { className: 'double-count' },
+          children: [`两倍值: ${this.doubleCount.value}`]
+        },
+        {
+          tag: 'div',
           props: {},
-          listeners: {
-            click: () => {
-              this.state.count++;
+          children: [
+            { 
+              tag: 'button', 
+              props: { 
+                onClick: this.decrement.bind(this) 
+              }, 
+              children: ['-'] 
+            },
+            { 
+              tag: 'button', 
+              props: { 
+                onClick: this.reset.bind(this) 
+              }, 
+              children: ['重置'] 
+            },
+            { 
+              tag: 'button', 
+              props: { 
+                onClick: this.increment.bind(this) 
+              }, 
+              children: ['+'] 
             }
-          },
-          children: ['增加']
+          ]
         }
       ]
     };
   }
-} 
+
+  // 组件生命周期钩子
+  public mounted: boolean = false;
+  public updated: boolean = false;
+  public unmounted: boolean = false;
+  
+  public onMounted(): void {
+    console.log('Counter组件已挂载');
+  }
+  
+  public onUpdated(): void {
+    console.log('Counter组件已更新', { count: this.state.count });
+  }
+  
+  public onUnmounted(): void {
+    console.log('Counter组件已卸载');
+    // 清理可能的副作用
+  }
+}

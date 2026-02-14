@@ -2,20 +2,16 @@ import { Component, VNode } from '../../lib';
 import { StyleOptions } from '../../lib/style/StyleManager';
 import { Navigation } from './Navigation';
 import { TextInput } from './TextInput';
-
-interface NavLink {
-  path: string;
-  text: string;
-}
+import { SlotDemo } from './SlotDemo';
 
 export class Home extends Component {
   protected initState() {
     return {
-      title: '欢迎使用 Free Framework',
+      title: 'Free Framework 示例',
       navigationLinks: [
         { path: '/', text: '首页' },
         { path: '/counter', text: '计数器' },
-        { path: '/about', text: '关于' }
+        { path: '/about', text: '关于' },
       ],
       lastNavigation: '',
       inputValue: '',
@@ -23,23 +19,40 @@ export class Home extends Component {
   }
 
   protected initStyles(): void {
+    const containerStyles: StyleOptions = {
+      selector: '.container',
+      properties: {
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '20px',
+      },
+    };
+
+    const titleStyles: StyleOptions = {
+      selector: '.title',
+      properties: {
+        fontSize: '32px',
+        color: '#2c3e50',
+        textAlign: 'center',
+        marginBottom: '40px',
+      },
+    };
+
+    const sectionStyles: StyleOptions = {
+      selector: '.section',
+      properties: {
+        marginBottom: '40px',
+      },
+    };
+
     const homeStyles: StyleOptions = {
       selector: '.home',
       properties: {
         maxWidth: '800px',
         margin: '40px auto',
         padding: '20px',
-        textAlign: 'center'
-      }
-    };
-
-    const titleStyles: StyleOptions = {
-      selector: '.home h1',
-      properties: {
-        fontSize: '2.5em',
-        color: '#2c3e50',
-        marginBottom: '20px'
-      }
+        textAlign: 'center',
+      },
     };
 
     const contentStyles: StyleOptions = {
@@ -47,8 +60,8 @@ export class Home extends Component {
       properties: {
         marginTop: '30px',
         fontSize: '1.2em',
-        color: '#666'
-      }
+        color: '#666',
+      },
     };
 
     const navigationInfoStyles: StyleOptions = {
@@ -59,8 +72,8 @@ export class Home extends Component {
         backgroundColor: '#f8f9fa',
         borderRadius: '4px',
         color: '#666',
-        fontSize: '0.9em'
-      }
+        fontSize: '0.9em',
+      },
     };
 
     const messageItemStyles: StyleOptions = {
@@ -71,12 +84,14 @@ export class Home extends Component {
         backgroundColor: '#fff',
         borderRadius: '4px',
         boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
-        textAlign: 'left'
-      }
+        textAlign: 'left',
+      },
     };
 
-    this.styleManager.addStyle('home', homeStyles);
+    this.styleManager.addStyle('container', containerStyles);
     this.styleManager.addStyle('title', titleStyles);
+    this.styleManager.addStyle('section', sectionStyles);
+    this.styleManager.addStyle('home', homeStyles);
     this.styleManager.addStyle('content', contentStyles);
     this.styleManager.addStyle('navigationInfo', navigationInfoStyles);
     this.styleManager.addStyle('messageItem', messageItemStyles);
@@ -90,31 +105,50 @@ export class Home extends Component {
     this.state.inputValue = value;
   }
 
-
   protected render(): VNode {
     return {
       tag: 'div',
-      props: { class: 'home' },
+      props: { class: 'container' },
       children: [
         {
           tag: 'h1',
-          props: {},
-          children: ['{{title}}']
+          props: { class: 'title' },
+          children: [this.state.title],
+        },
+        {
+          tag: 'div',
+          props: { class: 'section' },
+          children: [
+            {
+              tag: 'div',
+              props: { class: 'counter-container' },
+              children: ['Counter Component'],
+            },
+          ],
+        },
+        {
+          tag: 'div',
+          props: { class: 'section' },
+          children: [
+            {
+              component: SlotDemo,
+              props: {},
+            },
+          ],
         },
         {
           component: Navigation,
           props: {
             links: this.state.navigationLinks,
-            onNavigate: (path: string) => this.handleNavigation(path)
+            onNavigate: (path: string) => this.handleNavigation(path),
           },
-          children: []
         },
         {
           tag: 'div',
           props: { class: 'content' },
           children: [
-            '这是一个轻量级的前端框架示例，展示了组件化、响应式状态管理、路由等功能。'
-          ]
+            '这是一个轻量级的前端框架示例，展示了组件化、响应式状态管理、路由等功能。',
+          ],
         },
         {
           component: TextInput,
@@ -124,22 +158,22 @@ export class Home extends Component {
             label: '消息',
             onChange: (value: string) => this.handleInputChange(value),
           },
-          children: []
+          children: [],
         },
         {
           tag: 'div',
           props: { class: 'navigation-info' },
-          children: ['{{lastNavigation}}']
+          children: ['{{lastNavigation}}'],
         },
         {
           tag: 'div',
-          children: ['{{inputValue}}']
+          children: ['{{inputValue}}'],
         },
         {
           tag: 'div',
-          children: [this.state.inputValue]
-        }
-      ]
+          children: [this.state.inputValue],
+        },
+      ],
     };
   }
-} 
+}

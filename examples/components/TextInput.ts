@@ -79,30 +79,35 @@ export class TextInput extends Component {
 
 
   protected render(): VNode {
+    const children = [];
+    
+    if (this.props.label) {
+      children.push({
+        tag: 'label',
+        props: { class: 'text-input-label' },
+        children: [this.props.label]
+      });
+    }
+    
+    children.push({
+      tag: 'input',
+      props: {
+        class: 'text-input',
+        type: 'text',
+        value: this.state.value,
+        placeholder: this.props.placeholder ?? ''
+      },
+      listeners: {
+        input: (e: Event) => this.handleInput(e),
+        focus: () => this.state.isFocused = true,
+        blur: () => this.state.isFocused = false
+      }
+    });
+    
     return {
       tag: 'div',
       props: { class: 'text-input-container' },
-      children: [
-        this.props.label ? {
-          tag: 'label',
-          props: { class: 'text-input-label' },
-          children: [this.props.label]
-        } : null,
-        {
-          tag: 'input',
-          props: {
-            class: 'text-input',
-            type: 'text',
-            value: this.state.value,
-            placeholder: this.props.placeholder ?? ''
-          },
-          listeners: {
-            input: (e: Event) => this.handleInput(e),
-            focus: () => this.state.isFocused = true,
-            blur: () => this.state.isFocused = false
-          }
-        }
-      ]
+      children
     };
   }
-} 
+}

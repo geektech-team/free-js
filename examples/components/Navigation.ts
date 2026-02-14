@@ -85,7 +85,7 @@ export class Navigation extends Component {
     return {
       tag: 'nav',
       props: { class: 'navigation' },
-      children: this.state.links.map(link => ({
+      children: this.state.links.map((link: { path: string; text: string }) => ({
         tag: 'a',
         props: {
           class: `nav-link ${this.state.currentPath === link.path ? 'active' : ''}`,
@@ -98,4 +98,4 @@ export class Navigation extends Component {
       }))
     };
   }
-} 
+}
