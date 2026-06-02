@@ -5,10 +5,11 @@ export class SlotDemo extends Component {
   protected initState() {
     return {
       title: '插槽示例',
-      content: '这是一个展示插槽功能的示例。通过插槽，我们可以让父组件自定义子组件的部分内容。',
+      content:
+        '这是一个展示插槽功能的示例。通过插槽，我们可以让父组件自定义子组件的部分内容。',
       footerText: '© 2024 Free Framework',
       counter: 0,
-      messages: [] as string[]
+      messages: [] as string[],
     };
   }
 
@@ -18,8 +19,8 @@ export class SlotDemo extends Component {
       properties: {
         padding: '20px',
         maxWidth: '800px',
-        margin: '0 auto'
-      }
+        margin: '0 auto',
+      },
     };
 
     const titleStyles: StyleOptions = {
@@ -28,8 +29,8 @@ export class SlotDemo extends Component {
         fontSize: '24px',
         color: '#2c3e50',
         marginBottom: '20px',
-        textAlign: 'center'
-      }
+        textAlign: 'center',
+      },
     };
 
     const buttonStyles: StyleOptions = {
@@ -42,11 +43,11 @@ export class SlotDemo extends Component {
         borderRadius: '4px',
         cursor: 'pointer',
         marginTop: '10px',
-        transition: 'background-color 0.3s'
+        transition: 'background-color 0.3s',
       },
       hover: {
-        backgroundColor: '#45a049'
-      }
+        backgroundColor: '#45a049',
+      },
     };
 
     const inputStyles: StyleOptions = {
@@ -56,8 +57,8 @@ export class SlotDemo extends Component {
         border: '1px solid #ddd',
         borderRadius: '4px',
         marginRight: '8px',
-        width: '200px'
-      }
+        width: '200px',
+      },
     };
 
     const messageStyles: StyleOptions = {
@@ -67,8 +68,8 @@ export class SlotDemo extends Component {
         padding: '8px',
         margin: '4px 0',
         borderRadius: '4px',
-        color: '#333'
-      }
+        color: '#333',
+      },
     };
 
     this.styleManager.addStyle('demo', demoStyles);
@@ -96,7 +97,7 @@ export class SlotDemo extends Component {
         {
           tag: 'h1',
           props: { class: 'slot-demo-title' },
-          children: ['{{title}}']
+          children: ['{{title}}'],
         },
         {
           tag: 'div',
@@ -105,7 +106,7 @@ export class SlotDemo extends Component {
             {
               tag: 'div',
               props: { class: 'card-header' },
-              children: ['自定义卡片标题']
+              children: ['自定义卡片标题'],
             },
             {
               tag: 'div',
@@ -113,7 +114,7 @@ export class SlotDemo extends Component {
               children: [
                 {
                   tag: 'div',
-                  children: ['{{content}}']
+                  children: ['{{content}}'],
                 },
                 {
                   tag: 'div',
@@ -123,22 +124,25 @@ export class SlotDemo extends Component {
                       tag: 'button',
                       props: { class: 'slot-demo-button' },
                       listeners: {
-                        click: this.incrementCounter
+                        click: this.incrementCounter,
                       },
-                      children: ['增加计数']
+                      children: ['增加计数'],
                     },
                     {
                       tag: 'button',
-                      props: { 
+                      props: {
                         class: 'slot-demo-button',
-                        style: { marginLeft: '8px', backgroundColor: '#2196F3' }
+                        style: {
+                          marginLeft: '8px',
+                          backgroundColor: '#2196F3',
+                        },
                       },
                       listeners: {
-                        click: this.addMessage
+                        click: this.addMessage,
                       },
-                      children: ['添加消息']
-                    }
-                  ]
+                      children: ['添加消息'],
+                    },
+                  ],
                 },
                 {
                   tag: 'div',
@@ -146,19 +150,19 @@ export class SlotDemo extends Component {
                   children: this.state.messages.map((message: string) => ({
                     tag: 'div',
                     props: { class: 'slot-demo-message' },
-                    children: [message]
-                  }))
-                }
-              ]
+                    children: [message],
+                  })),
+                },
+              ],
             },
             {
               tag: 'div',
               props: { class: 'card-footer' },
-              children: ['{{footerText}}']
-            }
-          ]
-        }
-      ]
+              children: ['{{footerText}}'],
+            },
+          ],
+        },
+      ],
     };
   }
 }

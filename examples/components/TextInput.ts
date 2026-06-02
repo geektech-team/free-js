@@ -17,7 +17,7 @@ export class TextInput extends Component {
   protected initState() {
     return {
       value: this.props.value ?? '',
-      isFocused: false
+      isFocused: false,
     };
   }
 
@@ -29,8 +29,8 @@ export class TextInput extends Component {
         flexDirection: 'column',
         gap: '8px',
         maxWidth: '300px',
-        margin: '0 auto'
-      }
+        margin: '0 auto',
+      },
     };
 
     const labelStyles: StyleOptions = {
@@ -38,8 +38,8 @@ export class TextInput extends Component {
       properties: {
         fontSize: '0.9em',
         color: '#666',
-        textAlign: 'left'
-      }
+        textAlign: 'left',
+      },
     };
 
     const inputStyles: StyleOptions = {
@@ -50,16 +50,16 @@ export class TextInput extends Component {
         border: '2px solid #ddd',
         borderRadius: '4px',
         outline: 'none',
-        transition: 'all 0.3s'
-      }
+        transition: 'all 0.3s',
+      },
     };
 
     const inputFocusStyles: StyleOptions = {
       selector: '.text-input:focus',
       properties: {
         borderColor: '#42b983',
-        boxShadow: '0 0 0 2px rgba(66, 185, 131, 0.1)'
-      }
+        boxShadow: '0 0 0 2px rgba(66, 185, 131, 0.1)',
+      },
     };
 
     this.styleManager.addStyle('container', containerStyles);
@@ -71,43 +71,42 @@ export class TextInput extends Component {
   private handleInput(e: Event): void {
     const value = (e.target as HTMLInputElement).value;
     this.state.value = value;
-    
+
     if (this.props.onChange) {
       this.props.onChange(value);
     }
   }
 
-
   protected render(): VNode {
     const children = [];
-    
+
     if (this.props.label) {
       children.push({
         tag: 'label',
         props: { class: 'text-input-label' },
-        children: [this.props.label]
+        children: [this.props.label],
       });
     }
-    
+
     children.push({
       tag: 'input',
       props: {
         class: 'text-input',
         type: 'text',
         value: this.state.value,
-        placeholder: this.props.placeholder ?? ''
+        placeholder: this.props.placeholder ?? '',
       },
       listeners: {
         input: (e: Event) => this.handleInput(e),
-        focus: () => this.state.isFocused = true,
-        blur: () => this.state.isFocused = false
-      }
+        focus: () => (this.state.isFocused = true),
+        blur: () => (this.state.isFocused = false),
+      },
     });
-    
+
     return {
       tag: 'div',
       props: { class: 'text-input-container' },
-      children
+      children,
     };
   }
 }

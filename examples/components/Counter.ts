@@ -8,26 +8,26 @@ export interface CounterProps {
 
 export class Counter extends Component<any> {
   // 使用响应式状态
-    public state = reactive({
-      count: 0
-    });
-  
+  public state = reactive({
+    count: 0,
+  });
+
   // 计算属性
   private doubleCount = computed(() => this.state.count * 2);
-  
+
   constructor(props?: CounterProps) {
     super(props || {});
     // 初始化状态
     this.state.count = this.props?.initialCount || 0;
   }
-  
+
   // 初始化状态
   protected initState() {
     return {
-      count: 0
+      count: 0,
     };
   }
-  
+
   protected initStyles(): void {
     const counterStyles: StyleOptions = {
       selector: '.counter',
@@ -39,15 +39,15 @@ export class Counter extends Component<any> {
         borderRadius: '4px',
         textAlign: 'center',
         backgroundColor: '#fff',
-        boxShadow: '0 2px 8px rgba(0,0,0,0.1)'
+        boxShadow: '0 2px 8px rgba(0,0,0,0.1)',
       },
       media: {
         '(max-width: 768px)': {
           maxWidth: '100%',
           margin: '10px',
-          padding: '15px'
-        }
-      }
+          padding: '15px',
+        },
+      },
     };
 
     const buttonStyles: StyleOptions = {
@@ -61,11 +61,11 @@ export class Counter extends Component<any> {
         cursor: 'pointer',
         margin: '0 5px',
         fontSize: '16px',
-        transition: 'background-color 0.3s ease'
+        transition: 'background-color 0.3s ease',
       },
       hover: {
-        background: '#45a049'
-      }
+        background: '#45a049',
+      },
     };
 
     const countStyles: StyleOptions = {
@@ -74,8 +74,8 @@ export class Counter extends Component<any> {
         fontSize: '48px',
         fontWeight: 'bold',
         color: '#333',
-        margin: '20px 0'
-      }
+        margin: '20px 0',
+      },
     };
 
     const doubleCountStyles: StyleOptions = {
@@ -83,8 +83,8 @@ export class Counter extends Component<any> {
       properties: {
         fontSize: '18px',
         color: '#666',
-        marginTop: '10px'
-      }
+        marginTop: '10px',
+      },
     };
 
     this.styleManager.addStyle('counter', counterStyles);
@@ -120,48 +120,48 @@ export class Counter extends Component<any> {
     return {
       tag: 'div',
       props: {
-        className: 'counter'
+        className: 'counter',
       },
       children: [
         { tag: 'h2', props: {}, children: ['计数器示例'] },
-        { 
-          tag: 'div', 
-          props: { className: 'counter-count' }, 
-          children: [String(this.state.count)] 
+        {
+          tag: 'div',
+          props: { className: 'counter-count' },
+          children: [String(this.state.count)],
         },
         {
           tag: 'div',
           props: { className: 'double-count' },
-          children: [`两倍值: ${this.doubleCount.value}`]
+          children: [`两倍值: ${this.doubleCount.value}`],
         },
         {
           tag: 'div',
           props: {},
           children: [
-            { 
-              tag: 'button', 
-              props: { 
-                onClick: this.decrement.bind(this) 
-              }, 
-              children: ['-'] 
+            {
+              tag: 'button',
+              props: {
+                onClick: this.decrement.bind(this),
+              },
+              children: ['-'],
             },
-            { 
-              tag: 'button', 
-              props: { 
-                onClick: this.reset.bind(this) 
-              }, 
-              children: ['重置'] 
+            {
+              tag: 'button',
+              props: {
+                onClick: this.reset.bind(this),
+              },
+              children: ['重置'],
             },
-            { 
-              tag: 'button', 
-              props: { 
-                onClick: this.increment.bind(this) 
-              }, 
-              children: ['+'] 
-            }
-          ]
-        }
-      ]
+            {
+              tag: 'button',
+              props: {
+                onClick: this.increment.bind(this),
+              },
+              children: ['+'],
+            },
+          ],
+        },
+      ],
     };
   }
 
@@ -169,15 +169,15 @@ export class Counter extends Component<any> {
   public mounted: boolean = false;
   public updated: boolean = false;
   public unmounted: boolean = false;
-  
+
   public onMounted(): void {
     console.log('Counter组件已挂载');
   }
-  
+
   public onUpdated(): void {
     console.log('Counter组件已更新', { count: this.state.count });
   }
-  
+
   public onUnmounted(): void {
     console.log('Counter组件已卸载');
     // 清理可能的副作用

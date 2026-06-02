@@ -1,4 +1,5 @@
 import { StyleManager } from '../StyleManager';
+import { beforeEach, describe, expect, it } from 'bun:test';
 
 describe('StyleManager', () => {
   let styleManager: StyleManager;
@@ -12,7 +13,7 @@ describe('StyleManager', () => {
       const styleId = 'test-style';
       const styleOptions = {
         selector: '.test',
-        properties: { color: 'red' }
+        properties: { color: 'red' },
       };
 
       styleManager.addStyle(styleId, styleOptions);
@@ -23,11 +24,11 @@ describe('StyleManager', () => {
       const styleId = 'test-style';
       const initialStyle = {
         selector: '.test',
-        properties: { color: 'red' }
+        properties: { color: 'red' },
       };
       const updatedStyle = {
         selector: '.test',
-        properties: { color: 'blue' }
+        properties: { color: 'blue' },
       };
 
       styleManager.addStyle(styleId, initialStyle);
@@ -39,7 +40,7 @@ describe('StyleManager', () => {
       const styleId = 'test-style';
       const styleOptions = {
         selector: '.test',
-        properties: { color: 'red' }
+        properties: { color: 'red' },
       };
 
       styleManager.addStyle(styleId, styleOptions);
@@ -53,7 +54,7 @@ describe('StyleManager', () => {
       const styleId = 'test-style';
       const styleOptions = {
         selector: '.test',
-        properties: { color: 'red' }
+        properties: { color: 'red' },
       };
 
       styleManager.addStyle(styleId, styleOptions);
@@ -66,7 +67,7 @@ describe('StyleManager', () => {
       const styleOptions = {
         selector: '.test',
         properties: { color: 'red' },
-        hover: { color: 'blue' }
+        hover: { color: 'blue' },
       };
 
       styleManager.addStyle(styleId, styleOptions);
@@ -80,12 +81,14 @@ describe('StyleManager', () => {
         selector: '.test',
         properties: { color: 'red' },
         media: {
-          '(max-width: 768px)': { color: 'blue' }
-        }
+          '(max-width: 768px)': { color: 'blue' },
+        },
       };
 
       styleManager.addStyle(styleId, styleOptions);
-      expect(styleManager.styleElement.textContent).toContain('@media (max-width: 768px)');
+      expect(styleManager.styleElement.textContent).toContain(
+        '@media (max-width: 768px)'
+      );
     });
   });
 
@@ -94,7 +97,7 @@ describe('StyleManager', () => {
       const styleId = 'test-style';
       const styleOptions = {
         selector: '.test',
-        properties: { color: 'red' }
+        properties: { color: 'red' },
       };
 
       styleManager.addStyle(styleId, styleOptions);

@@ -1,5 +1,6 @@
 import { Component } from '../component';
 import { VNode } from '../vnode';
+import { describe, expect, it, beforeEach, afterEach, spyOn } from 'bun:test';
 
 class TestComponent extends Component {
   protected initState(): object {
@@ -14,7 +15,7 @@ class TestComponent extends Component {
     return {
       tag: 'div',
       props: { id: 'test-component' },
-      children: [`Count: ${this.state.count}`]
+      children: [`Count: ${this.state.count}`],
     };
   }
 }
@@ -56,7 +57,7 @@ describe('Component', () => {
     });
 
     it('状态更新应该触发重新渲染', () => {
-      const renderSpy = jest.spyOn(component, 'render');
+      const renderSpy = spyOn(component, 'render');
       component.mount(container);
       renderSpy.mockClear(); // 清除mount时的render调用
 
@@ -68,12 +69,12 @@ describe('Component', () => {
   describe('错误处理', () => {
     it('应该捕获渲染错误', () => {
       const error = new Error('Render error');
-      const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
-      jest.spyOn(component, 'render').mockImplementation(() => {
+      const consoleSpy = spyOn(console, 'error').mockImplementation(() => {});
+      spyOn(component, 'render').mockImplementation(() => {
         throw error;
       });
 
-      component.mount(container);
+      expect(() => component.mount(container)).toThrow(error);
       expect(consoleSpy).toHaveBeenCalledWith('组件渲染错误:', error);
       consoleSpy.mockRestore();
     });

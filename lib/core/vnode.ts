@@ -1,17 +1,28 @@
-import { Component, ComponentProps } from './component';
+import type { ComponentConstructor, ComponentProps } from './component';
+
+export interface ComponentType {
+  mount(container: HTMLElement): void;
+  unmount(): void;
+  on(eventName: string, listener: (...args: any[]) => void): void;
+}
+
+type VNodeComponentProps = ComponentProps;
 
 export interface HTMLProps {
   [key: string]: any;
+  class?: string;
   className?: string;
   style?: Record<string, string | number>;
-  'v-model'?: string;
-  'v-if'?: boolean;
-  'v-for'?: string;
-  'v-show'?: boolean;
 }
 
 export interface EventListeners {
   [eventName: string]: (event: Event) => void;
+}
+
+export interface Directions {
+  model?: string;
+  if?: boolean;
+  show?: boolean;
 }
 
 export interface HTMLNode {
@@ -19,59 +30,105 @@ export interface HTMLNode {
   props?: HTMLProps;
   children?: Array<VNode | string>;
   listeners?: EventListeners;
+  key?: string | number;
+  slot?: string;
+  directions?: Directions;
 }
 
-export interface ComponentNode<P extends ComponentProps = ComponentProps> {
-  component: new (props: P) => Component<P>;
+export interface ComponentNode<
+  P extends VNodeComponentProps = VNodeComponentProps,
+> {
+  component: ComponentConstructor<P>;
   props?: P;
   children?: Array<VNode | string>;
-  emitters?: Record<string, () => void>;
+  emitters?: Record<string, (...args: any[]) => void>;
+  key?: string | number;
+  slot?: string;
+  directions?: Directions;
 }
 
 export interface SlotProvider {
   tag: 'slot';
   props: { name: string };
+  children?: Array<VNode | string>;
+  key?: string | number;
+  directions?: Directions;
 }
 
 export interface SlotInjector {
   tag: string;
   slot: string;
+  key?: string | number;
+  directions?: Directions;
 }
 
 export type VNode = HTMLNode | ComponentNode | SlotProvider | SlotInjector;
 
-// 辅助函数：创建HTML元素的VNode
+export function isComponentNode(vnode: VNode): vnode is ComponentNode {
+  return typeof vnode === 'object' && vnode !== null && 'component' in vnode;
+}
+
+export function isHTMLNode(vnode: VNode): vnode is HTMLNode {
+  return (
+    typeof vnode === 'object' &&
+    vnode !== null &&
+    'tag' in vnode &&
+    vnode.tag !== 'slot'
+  );
+}
+
+export function isSlotProvider(vnode: VNode): vnode is SlotProvider {
+  return (
+    typeof vnode === 'object' &&
+    vnode !== null &&
+    'tag' in vnode &&
+    vnode.tag === 'slot'
+  );
+}
+
 export function h(
   tag: string,
   props?: HTMLProps,
   children?: Array<VNode | string>,
-  listeners?: EventListeners
+  listeners?: EventListeners,
+  key?: string | number,
+  directions?: Directions
 ): HTMLNode {
   return {
     tag,
     props,
     children,
     listeners,
+    key,
+    directions,
   };
 }
 
-// 辅助函数：创建组件的VNode
-export function component<P extends ComponentProps>(
-  componentClass: new (props: P) => Component<P>,
+export function createComponent<P extends VNodeComponentProps>(
+  componentClass: ComponentConstructor<P>,
   props?: P,
-  children?: Array<VNode | string>
+  children?: Array<VNode | string>,
+  key?: string | number,
+  directions?: Directions
 ): ComponentNode<P> {
   return {
     component: componentClass,
     props,
     children,
+    key,
+    directions,
   };
 }
 
-// 辅助函数：创建插槽
-export function slot(name: string): SlotProvider {
+export function slot(
+  name: string,
+  key?: string | number,
+  directions?: Directions
+): SlotProvider {
   return {
     tag: 'slot',
     props: { name },
+    key,
+    directions,
   };
 }

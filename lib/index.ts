@@ -12,5 +12,5 @@ export function createApp(options: AppOptions = {}): FreeApp {
 }
 
 // 导出框架名称和版本
-export const version = '0.0.1';
+export const version = '1.0.0';
 export const name = 'free-js';

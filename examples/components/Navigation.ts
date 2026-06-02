@@ -22,9 +22,9 @@ export class Navigation extends Component {
     return {
       links: this.props.links ?? [
         { path: '/', text: '首页' },
-        { path: '/counter', text: '计数器' }
+        { path: '/counter', text: '计数器' },
       ],
-      currentPath: window.location.pathname
+      currentPath: window.location.pathname,
     };
   }
 
@@ -35,8 +35,8 @@ export class Navigation extends Component {
         display: 'flex',
         justifyContent: 'center',
         gap: '20px',
-        marginBottom: '30px'
-      }
+        marginBottom: '30px',
+      },
     };
 
     const linkStyles: StyleOptions = {
@@ -48,19 +48,19 @@ export class Navigation extends Component {
         backgroundColor: '#42b983',
         borderRadius: '4px',
         textDecoration: 'none',
-        transition: 'all 0.3s'
+        transition: 'all 0.3s',
       },
       hover: {
-        backgroundColor: '#3aa876'
-      }
+        backgroundColor: '#3aa876',
+      },
     };
 
     const activeLinkStyles: StyleOptions = {
       selector: '.navigation .nav-link.active',
       properties: {
         backgroundColor: '#3aa876',
-        transform: 'scale(1.05)'
-      }
+        transform: 'scale(1.05)',
+      },
     };
 
     this.styleManager.addStyle('navigation', navStyles);
@@ -71,12 +71,12 @@ export class Navigation extends Component {
   private handleNavigation(path: string, e: Event) {
     e.preventDefault();
     this.state.currentPath = path;
-    
+
     // 调用父组件传入的回调
     if (this.props.onNavigate) {
       this.props.onNavigate(path);
     }
-    
+
     const router = useRouter();
     router.push(path);
   }
@@ -85,17 +85,19 @@ export class Navigation extends Component {
     return {
       tag: 'nav',
       props: { class: 'navigation' },
-      children: this.state.links.map((link: { path: string; text: string }) => ({
-        tag: 'a',
-        props: {
-          class: `nav-link ${this.state.currentPath === link.path ? 'active' : ''}`,
-          href: link.path
-        },
-        listeners: {
-          click: (e: Event) => this.handleNavigation(link.path, e)
-        },
-        children: [link.text]
-      }))
+      children: this.state.links.map(
+        (link: { path: string; text: string }) => ({
+          tag: 'a',
+          props: {
+            class: `nav-link ${this.state.currentPath === link.path ? 'active' : ''}`,
+            href: link.path,
+          },
+          listeners: {
+            click: (e: Event) => this.handleNavigation(link.path, e),
+          },
+          children: [link.text],
+        })
+      ),
     };
   }
 }

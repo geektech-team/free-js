@@ -21,7 +21,9 @@ export function setRouter(r: Router): void {
  */
 export function useRouter(): Router {
   if (!router) {
-    throw new Error('Router is not initialized. Please make sure you have installed the router plugin.');
+    throw new Error(
+      'Router is not initialized. Please make sure you have installed the router plugin.'
+    );
   }
   return router;
 }

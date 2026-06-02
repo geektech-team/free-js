@@ -1,16 +1,16 @@
-import { effect } from './reactive';
+import { effect, ReactiveEffect } from './reactive';
 
 export interface TemplateBinding {
   node: Text;
-  key: string;
   originalText: string;
+  effect: ReactiveEffect;
 }
 
 export class TemplateEngine {
   private bindings: TemplateBinding[] = [];
   private readonly templateRegex = /{{(.*?)}}/g;
 
-  constructor(private state: any) {
+  constructor(public state: any) {
     if (!state || typeof state !== 'object') {
       throw new Error('TemplateEngine requires a valid state object');
     }
@@ -27,7 +27,8 @@ export class TemplateEngine {
     }
 
     const textNode = document.createTextNode('');
-    const matches = text.match(this.templateRegex);
+    this.templateRegex.lastIndex = 0;
+    const matches = Array.from(text.matchAll(this.templateRegex));
 
     if (matches && matches.length > 0) {
       this.setupReactiveBindings(textNode, text, matches);
@@ -45,7 +46,7 @@ export class TemplateEngine {
   private setupReactiveBindings(
     node: Text,
     originalText: string,
-    matches: RegExpMatchArray
+    matches: RegExpExecArray[]
   ): void {
     // 存储所有需要监控的键
     const keys = new Set<string>();
@@ -54,20 +55,8 @@ export class TemplateEngine {
     const initialText = this.evaluateTemplate(originalText, matches, keys);
     node.textContent = initialText;
 
-    // 为每个键创建绑定记录
-    matches.forEach((match) => {
-      const key = match.slice(2, -2).trim();
-      if (key) {
-        this.bindings.push({
-          node,
-          key,
-          originalText,
-        });
-      }
-    });
-
     // 创建响应式effect，当任何相关的状态变化时更新文本
-    effect(() => {
+    const effectFn = effect(() => {
       try {
         const updatedText = this.evaluateTemplate(originalText, matches, keys);
         if (node.textContent !== updatedText) {
@@ -78,6 +67,13 @@ export class TemplateEngine {
         node.textContent = `Error: ${error instanceof Error ? error.message : 'Unknown error'}`;
       }
     });
+
+    // 存储绑定关系，以便后续清理
+    this.bindings.push({
+      node,
+      originalText,
+      effect: effectFn,
+    });
   }
 
   /**
@@ -85,21 +81,23 @@ export class TemplateEngine {
    */
   private evaluateTemplate(
     text: string,
-    matches: RegExpMatchArray,
+    matches: RegExpExecArray[],
     keys: Set<string>
   ): string {
     let result = text;
 
     matches.forEach((match) => {
-      const key = match.slice(2, -2).trim();
-      keys.add(key);
+      const key = match[1]?.trim();
+      if (key) {
+        keys.add(key);
 
-      // 尝试获取状态值
-      const value = this.getValueFromState(key);
-      // 将undefined或null转换为空字符串
-      const displayValue =
-        value === undefined || value === null ? '' : String(value);
-      result = result.replace(match, displayValue);
+        // 尝试获取状态值
+        const value = this.getValueFromState(key);
+        // 将undefined或null转换为空字符串
+        const displayValue =
+          value === undefined || value === null ? '' : String(value);
+        result = result.replace(match[0], displayValue);
+      }
     });
 
     return result;
@@ -129,6 +127,10 @@ export class TemplateEngine {
    * 清除所有模板绑定
    */
   public clearBindings(): void {
+    // 停止所有effect
+    this.bindings.forEach((binding) => {
+      binding.effect.active = false;
+    });
     this.bindings = [];
   }
 
@@ -143,6 +145,7 @@ export class TemplateEngine {
    * 检查模板是否包含表达式
    */
   public hasExpressions(text: string): boolean {
+    this.templateRegex.lastIndex = 0;
     return this.templateRegex.test(text);
   }
 
@@ -168,8 +171,9 @@ export class TemplateEngine {
    * 计算模板值
    */
   public evaluateTemplateValue(text: string): string {
-    const matches = text.match(this.templateRegex);
-    if (!matches) {
+    this.templateRegex.lastIndex = 0;
+    const matches = Array.from(text.matchAll(this.templateRegex));
+    if (!matches || matches.length === 0) {
       return text;
     }
 

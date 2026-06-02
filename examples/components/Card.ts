@@ -15,8 +15,8 @@ export class Card extends Component {
         backgroundColor: '#fff',
         boxShadow: '0 2px 4px rgba(0, 0, 0, 0.1)',
         overflow: 'hidden',
-        margin: '20px 0'
-      }
+        margin: '20px 0',
+      },
     };
 
     const headerStyles: StyleOptions = {
@@ -26,8 +26,8 @@ export class Card extends Component {
         borderBottom: '1px solid #e4e4e4',
         backgroundColor: '#f8f9fa',
         fontWeight: 'bold',
-        fontSize: '18px'
-      }
+        fontSize: '18px',
+      },
     };
 
     const contentStyles: StyleOptions = {
@@ -35,8 +35,8 @@ export class Card extends Component {
       properties: {
         padding: '16px',
         lineHeight: '1.6',
-        color: '#333'
-      }
+        color: '#333',
+      },
     };
 
     const footerStyles: StyleOptions = {
@@ -46,8 +46,8 @@ export class Card extends Component {
         borderTop: '1px solid #e4e4e4',
         backgroundColor: '#f8f9fa',
         color: '#666',
-        fontSize: '14px'
-      }
+        fontSize: '14px',
+      },
     };
 
     this.styleManager.addStyle('card', cardStyles);
@@ -68,9 +68,9 @@ export class Card extends Component {
             {
               tag: 'slot',
               props: { name: 'header' },
-              children: ['默认标题']
-            }
-          ]
+              children: ['默认标题'],
+            },
+          ],
         },
         {
           tag: 'div',
@@ -79,9 +79,9 @@ export class Card extends Component {
             {
               tag: 'slot',
               props: { name: 'content' },
-              children: ['默认内容']
-            }
-          ]
+              children: ['默认内容'],
+            },
+          ],
         },
         {
           tag: 'div',
@@ -90,11 +90,11 @@ export class Card extends Component {
             {
               tag: 'slot',
               props: { name: 'footer' },
-              children: ['默认页脚']
-            }
-          ]
-        }
-      ]
+              children: ['默认页脚'],
+            },
+          ],
+        },
+      ],
     };
   }
-} 
+}

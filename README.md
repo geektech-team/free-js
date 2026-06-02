@@ -5,6 +5,7 @@
 ## 特性
 
 - ✨ 纯TypeScript实现，提供完整的类型支持
+- 🐇 Bun 原生工具链：包管理、测试、构建和文档服务均由 Bun 驱动
 - ⚡ 高效的响应式系统
 - 🧩 组件化开发模式
 - 🛣️ 内置路由功能
@@ -14,14 +15,8 @@
 ## 安装
 
 ```bash
-# 使用npm
-npm install free-js
-
-# 使用yarn
-yarn add free-js
-
-# 使用pnpm
-pnpm add free-js
+# 使用 Bun
+bun add free-js
 ```
 
 ## 快速开始
@@ -74,6 +69,16 @@ class App extends Component {
 // 创建并挂载应用
 const app = createApp({ root: App });
 app.mount();
+```
+
+## 开发命令
+
+```bash
+bun install
+bun test
+bun run build
+bun run dev
+bun run docs
 ```
 
 ## 响应式系统

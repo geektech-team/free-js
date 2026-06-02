@@ -1,6 +1,6 @@
 // 定义响应式对象接口
 export interface ReactiveEffect {
-  (): void;
+  (): any;
   deps: Set<ReactiveEffect>[];
   id: number;
   active: boolean;
@@ -16,6 +16,7 @@ let effectId = 0;
 export class ReactiveSystem {
   private static instance: ReactiveSystem;
   private activeEffect: ReactiveEffect | null = null;
+  private readonly effectStack: ReactiveEffect[] = [];
   private targetMap = new WeakMap<
     object,
     Map<string | symbol, Set<ReactiveEffect>>
@@ -51,7 +52,7 @@ export class ReactiveSystem {
     }
 
     // 如果传入的是已经是响应式对象，直接返回
-    if ((target as any)[IS_REACTIVE]) {
+    if (isReactive(target)) {
       return target;
     }
 
@@ -60,6 +61,12 @@ export class ReactiveSystem {
       return this.reactiveMap.get(target) as T;
     }
 
+    // 优化数组处理
+    if (Array.isArray(target)) {
+      return this.createReactiveArray(target);
+    }
+
+    // 普通对象处理
     const proxy = new Proxy(target, {
       get: (target, key: string | symbol) => {
         // 处理响应式标记的特殊属性
@@ -74,22 +81,6 @@ export class ReactiveSystem {
         this.track(target, key);
 
         const value = Reflect.get(target, key);
-
-        // 处理数组的变异方法
-        if (
-          Array.isArray(target) &&
-          typeof key === 'string' &&
-          this.arrayMethods.includes(key)
-        ) {
-          return (...args: any[]) => {
-            // 执行原始方法
-            const result = (value as Function).apply(target, args);
-            // 触发数组更新
-            this.trigger(target, 'length');
-            this.trigger(target, key);
-            return result;
-          };
-        }
 
         // 如果是对象，递归转换为响应式
         if (value && typeof value === 'object' && !Array.isArray(value)) {
@@ -121,12 +112,98 @@ export class ReactiveSystem {
         // 只有当值真正改变时才触发更新
         if (oldValue !== value) {
           this.trigger(target, key);
+        }
+        return result;
+      },
+      deleteProperty: (target, key: string | symbol) => {
+        // 检查是否是只读的
+        if ((target as any)[IS_READONLY]) {
+          console.warn(
+            `Cannot delete property ${String(key)} on readonly object`
+          );
+          return false;
+        }
+
+        const hadKey = key in target;
+        const result = Reflect.deleteProperty(target, key);
+
+        if (hadKey) {
+          this.trigger(target, key);
+        }
+        return result;
+      },
+    });
+
+    // 存储响应式对象的映射关系
+    this.reactiveMap.set(target, proxy);
+    return proxy;
+  }
+
+  /**
+   * 创建响应式数组
+   */
+  private createReactiveArray<T extends any[]>(target: T): T {
+    // 如果目标已经有对应的响应式对象，返回已存在的代理
+    if (this.reactiveMap.has(target)) {
+      return this.reactiveMap.get(target) as T;
+    }
+
+    const proxy = new Proxy(target, {
+      get: (target, key: string | symbol) => {
+        // 处理响应式标记的特殊属性
+        if (key === IS_REACTIVE) {
+          return true;
+        }
+        if (key === IS_READONLY) {
+          return false;
+        }
+
+        // 收集依赖
+        this.track(target, key);
+
+        const value = Reflect.get(target, key);
+
+        // 处理数组的变异方法
+        if (typeof key === 'string' && this.arrayMethods.includes(key)) {
+          return (...args: any[]) => {
+            // 执行原始方法
+            const arrayMethod = value as (...methodArgs: any[]) => unknown;
+            const result = arrayMethod.apply(target, args);
+            // 触发数组更新
+            this.trigger(target, 'length');
+            this.trigger(target, key);
+            return result;
+          };
+        }
+
+        return value;
+      },
+      set: (target, key: string | symbol, value) => {
+        // 检查是否是只读的
+        if ((target as any)[IS_READONLY]) {
+          console.warn(`Cannot set property ${String(key)} on readonly object`);
+          return false;
+        }
+
+        const oldValue = Reflect.get(target, key);
+
+        // 如果新值是对象，转换为响应式
+        if (
+          value &&
+          typeof value === 'object' &&
+          !Array.isArray(value) &&
+          !(value as any)[IS_REACTIVE]
+        ) {
+          value = this.reactive(value);
+        }
+
+        const result = Reflect.set(target, key, value);
+
+        // 只有当值真正改变时才触发更新
+        if (oldValue !== value) {
+          this.trigger(target, key);
           // 对于数组索引的修改，同时触发length的更新
-          if (
-            Array.isArray(target) &&
-            typeof key === 'string' &&
-            !isNaN(Number(key))
-          ) {
+          if (typeof key === 'string' && !isNaN(Number(key))) {
             this.trigger(target, 'length');
           }
         }
@@ -147,9 +224,7 @@ export class ReactiveSystem {
         if (hadKey) {
           this.trigger(target, key);
           // 对于数组，同时触发length的更新
-          if (Array.isArray(target)) {
-            this.trigger(target, 'length');
-          }
+          this.trigger(target, 'length');
         }
         return result;
       },
@@ -216,16 +291,23 @@ export class ReactiveSystem {
     const { lazy = false, scheduler } = options || {};
 
     const effectFn: ReactiveEffect = () => {
+      if (!effectFn.active) {
+        return fn();
+      }
+
       try {
         // 清除之前的依赖关系
         this.cleanup(effectFn);
+        this.effectStack.push(effectFn);
         this.activeEffect = effectFn;
         return fn();
       } catch (error) {
         console.error('Effect error:', error);
         return undefined;
       } finally {
-        this.activeEffect = null;
+        this.effectStack.pop();
+        this.activeEffect =
+          this.effectStack[this.effectStack.length - 1] ?? null;
       }
     };
 
@@ -247,20 +329,33 @@ export class ReactiveSystem {
   } {
     let dirty = true;
     let value: T;
+    const computedTarget = {};
+    const trackComputedValue = (): void => {
+      this.track(computedTarget, 'value');
+    };
 
-    const effect = this.effect(
+    const runner = this.effect(
       () => {
         value = getter();
         dirty = false;
       },
-      { lazy: true }
+      {
+        lazy: true,
+        scheduler: () => {
+          if (!dirty) {
+            dirty = true;
+            this.trigger(computedTarget, 'value');
+          }
+        },
+      }
     );
 
     return {
       get value(): T {
         if (dirty) {
-          effect();
+          runner();
         }
+        trackComputedValue();
         return value as T;
       },
     };

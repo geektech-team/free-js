@@ -1,57 +1,91 @@
-import { Component } from './component';
-import { Router } from '../router';
+import { Component, ComponentConstructor } from './component';
+import type { Router } from '../router';
 
 import { TemplateEngine } from './template';
 
-export interface AppOptions {
+// 插件接口定义
+export interface Plugin {
+  install: (app: FreeApp, ...args: any[]) => void;
+  onMounted?: (app: FreeApp) => void;
+  onUpdated?: (app: FreeApp) => void;
+  onBeforeUnmount?: (app: FreeApp) => void;
+}
+
+// 泛型化AppOptions接口
+export interface AppOptions<
+  TState = Record<string, any>,
+  TConfig = Record<string, any>,
+> {
   /** 根组件构造函数 */
-  root?: new () => Component;
+  root?: ComponentConstructor;
   /** 应用挂载点 */
   rootElement?: string | Element;
   /** 全局状态 */
-  state?: Record<string, any>;
+  state?: TState;
   /** 全局配置 */
-  config?: Record<string, any>;
+  config?: TConfig;
 }
 
-export interface AppContext {
+// 泛型化AppContext接口
+export interface AppContext<TConfig = Record<string, any>> {
   app: FreeApp;
   version: string;
-  config: Record<string, any>;
+  config: TConfig;
 }
 
-export class FreeApp {
+// 泛型化FreeApp类
+export class FreeApp<
+  TState extends Record<string, any> = Record<string, any>,
+  TConfig extends Record<string, any> = Record<string, any>,
+> {
   private container: HTMLElement;
-  private rootInstance: Component | null = null;
+  private rootInstance: Component<any, any> | null = null;
   private mounted: boolean = false;
   private templateEngine: TemplateEngine | null = null;
-  private readonly appContext: AppContext;
-  private plugins: Array<{ plugin: any; args: any[] }> = [];
+  private readonly appContext: AppContext<TConfig>;
+  private plugins: Array<{ plugin: Plugin; args: any[] }> = [];
   private unmountedCallback?: () => void;
   public router?: Router;
 
-  constructor(private options: AppOptions = {}) {
+  constructor(private options: AppOptions<TState, TConfig> = {}) {
     // 默认使用 body 作为容器
     this.container = document.body;
 
     this.appContext = {
-      app: this,
+      app: this as unknown as FreeApp,
       version: '1.0.0',
-      config: options.config || {},
+      config: options.config || ({} as TConfig),
     };
   }
 
   private handleError(error: Error): void {
     console.error('应用错误:', error);
-    // 可以在这里添加错误UI渲染
-    this.unmount();
+    // 渲染错误UI
+    this.renderErrorUI(error);
+    // 不立即卸载应用，而是显示错误信息
+  }
+
+  /**
+   * 渲染错误UI
+   */
+  private renderErrorUI(error: Error): void {
+    this.container.innerHTML = `
+      <div style="padding: 20px; background-color: #ffebee; color: #c62828; font-family: Arial, sans-serif;">
+        <h3>应用错误</h3>
+        <p>${error.message}</p>
+        <pre style="background-color: #fff; padding: 10px; border-radius: 4px; overflow: auto;">${error.stack}</pre>
+      </div>
+    `;
   }
 
   /**
    * 使用插件
    */
-  public use(plugin: any, ...args: any[]): this {
-    plugin.install(this, ...args);
+  public use(plugin: Plugin, ...args: any[]): this {
+    if (typeof plugin.install !== 'function') {
+      throw new Error('插件必须提供 install 方法');
+    }
+    plugin.install(this as unknown as FreeApp, ...args);
     this.plugins.push({ plugin, args });
     return this;
   }
@@ -66,6 +100,7 @@ export class FreeApp {
     }
 
     try {
+      // 添加全局应用实例
       (globalThis as any).__APP__ = this;
 
       // 确定挂载点
@@ -73,6 +108,8 @@ export class FreeApp {
         const rootElement = this.resolveRootElement(this.options.rootElement);
         if (rootElement) {
           this.container = rootElement as HTMLElement;
+        } else {
+          throw new Error(`无法找到挂载点: ${this.options.rootElement}`);
         }
       }
 
@@ -119,8 +156,6 @@ export class FreeApp {
       this.onBeforeUnmount();
 
       if (this.rootInstance) {
-        this.container.innerHTML = '';
-
         // 调用组件卸载方法
         if ('unmount' in this.rootInstance) {
           this.rootInstance.unmount();
@@ -136,6 +171,9 @@ export class FreeApp {
         this.templateEngine.clearBindings();
         this.templateEngine = null;
       }
+
+      // 清空容器
+      this.container.innerHTML = '';
 
       // 触发卸载后钩子
       if (this.unmountedCallback) {
@@ -156,7 +194,7 @@ export class FreeApp {
   /**
    * 更新根组件
    */
-  public updateRootComponent(component: new () => Component): void {
+  public updateRootComponent(component: ComponentConstructor): void {
     if (this.mounted) {
       this.unmount();
     }
@@ -167,7 +205,7 @@ export class FreeApp {
   /**
    * 更新应用状态
    */
-  public update(state?: Record<string, any>): this {
+  public update(state?: Partial<TState>): this {
     if (!this.mounted) {
       console.warn('Cannot update unmounted app');
       return this;
@@ -186,7 +224,7 @@ export class FreeApp {
         // 更新模板引擎状态
         if (this.templateEngine) {
           // 如果存在templateEngine，更新其状态
-          (this.templateEngine as any).state = state;
+          (this.templateEngine as any).state = this.options.state;
         }
       }
 
@@ -202,22 +240,22 @@ export class FreeApp {
   /**
    * 获取应用上下文
    */
-  public getContext(): AppContext {
+  public getContext(): AppContext<TConfig> {
     return this.appContext;
   }
 
   /**
    * 获取应用状态
    */
-  public getState(): Record<string, any> | undefined {
+  public getState(): TState | undefined {
     return this.options.state;
   }
 
   /**
    * 设置应用状态
    */
-  public setState(newState: Record<string, any>): this {
-    this.options.state = { ...this.options.state, ...newState };
+  public setState(newState: TState): this {
+    this.options.state = newState;
     if (this.mounted) {
       this.update();
     }
@@ -252,7 +290,7 @@ export class FreeApp {
     // 触发插件的mounted钩子
     this.plugins.forEach(({ plugin: pluginObj }) => {
       if (pluginObj && typeof pluginObj.onMounted === 'function') {
-        pluginObj.onMounted(this);
+        pluginObj.onMounted(this as unknown as FreeApp);
       }
     });
   }
@@ -261,7 +299,7 @@ export class FreeApp {
     // 触发插件的updated钩子
     this.plugins.forEach(({ plugin: pluginObj }) => {
       if (pluginObj && typeof pluginObj.onUpdated === 'function') {
-        pluginObj.onUpdated(this);
+        pluginObj.onUpdated(this as unknown as FreeApp);
       }
     });
   }
@@ -270,7 +308,7 @@ export class FreeApp {
     // 触发插件的beforeUnmount钩子
     this.plugins.forEach(({ plugin: pluginObj }) => {
       if (pluginObj && typeof pluginObj.onBeforeUnmount === 'function') {
-        pluginObj.onBeforeUnmount(this);
+        pluginObj.onBeforeUnmount(this as unknown as FreeApp);
       }
     });
   }
@@ -279,6 +317,9 @@ export class FreeApp {
 /**
  * 创建应用实例
  */
-export function createApp(options: AppOptions = {}): FreeApp {
-  return new FreeApp(options);
+export function createApp<
+  TState extends Record<string, any> = Record<string, any>,
+  TConfig extends Record<string, any> = Record<string, any>,
+>(options: AppOptions<TState, TConfig> = {}): FreeApp<TState, TConfig> {
+  return new FreeApp<TState, TConfig>(options);
 }
