@@ -38,7 +38,8 @@ describe('component public types', () => {
       writeFileSync(
         join(tempDir, 'component-consumer.ts'),
         [
-          "import { Component, VNode } from 'free-js-source';",
+          "import { Component, EventListeners, HTMLProps, VNode } from 'free-js-source';",
+          "import { RouteLocation, RouteMeta, createRouter } from 'free-js-source/router';",
           '',
           'interface Props {',
           '  label: string;',
@@ -67,6 +68,28 @@ describe('component public types', () => {
           '',
           "const counter = new TypedCounter({ label: 'Count' });",
           'counter.setState({ ready: false });',
+          '',
+          'const htmlProps: HTMLProps = {',
+          "  className: 'counter',",
+          '  disabled: false,',
+          "  style: { opacity: 0.9, color: 'red' },",
+          "  'aria-label': 'Typed counter'",
+          '};',
+          '',
+          'const listeners: EventListeners = {',
+          '  click: (event: Event) => {',
+          '    event.preventDefault();',
+          '  }',
+          '};',
+          '',
+          "const routeMeta: RouteMeta = { title: 'Home', requiresAuth: true };",
+          "const router = createRouter({ routes: [{ path: '/', component: TypedCounter, meta: routeMeta }] });",
+          'const route: RouteLocation | null = router.getCurrentRoute();',
+          'const title: unknown = route?.meta?.title;',
+          '',
+          'void htmlProps;',
+          'void listeners;',
+          'void title;',
         ].join('\n')
       );
       writeFileSync(
@@ -84,6 +107,7 @@ describe('component public types', () => {
               baseUrl: '.',
               paths: {
                 'free-js-source': [join(root, 'lib/index.ts')],
+                'free-js-source/router': [join(root, 'lib/router/index.ts')],
               },
             },
             include: ['component-consumer.ts'],

@@ -1,15 +1,33 @@
-import type { ComponentConstructor, ComponentProps } from './component';
+import type {
+  AnyComponentConstructor,
+  ComponentConstructor,
+  ComponentEventListener,
+  ComponentProps,
+} from './component';
 
 export interface ComponentType {
   mount(container: HTMLElement): void;
   unmount(): void;
-  on(eventName: string, listener: (...args: any[]) => void): void;
+  on(eventName: string, listener: ComponentEventListener): void;
 }
 
 type VNodeComponentProps = ComponentProps;
 
+export type VNodeComponentConstructor<
+  P extends VNodeComponentProps = VNodeComponentProps,
+> = ComponentConstructor<P> | AnyComponentConstructor;
+
+export type HTMLPropValue =
+  | string
+  | number
+  | boolean
+  | null
+  | undefined
+  | Record<string, string | number>
+  | EventListener;
+
 export interface HTMLProps {
-  [key: string]: any;
+  [key: string]: HTMLPropValue;
   class?: string;
   className?: string;
   style?: Record<string, string | number>;
@@ -38,10 +56,10 @@ export interface HTMLNode {
 export interface ComponentNode<
   P extends VNodeComponentProps = VNodeComponentProps,
 > {
-  component: ComponentConstructor<P>;
+  component: VNodeComponentConstructor<P>;
   props?: P;
   children?: Array<VNode | string>;
-  emitters?: Record<string, (...args: any[]) => void>;
+  emitters?: Record<string, ComponentEventListener>;
   key?: string | number;
   slot?: string;
   directions?: Directions;

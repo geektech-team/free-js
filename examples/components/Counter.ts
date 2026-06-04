@@ -1,4 +1,4 @@
-import { Component, VNode, reactive, computed } from '../../lib';
+import { Component, VNode, computed } from '../../lib';
 import { StyleOptions } from '../../lib/style/StyleManager';
 
 export interface CounterProps {
@@ -6,12 +6,11 @@ export interface CounterProps {
   step?: number;
 }
 
-export class Counter extends Component<any> {
-  // 使用响应式状态
-  public state = reactive({
-    count: 0,
-  });
+interface CounterState {
+  count: number;
+}
 
+export class Counter extends Component<CounterProps, CounterState> {
   // 计算属性
   private doubleCount = computed(() => this.state.count * 2);
 
@@ -22,7 +21,7 @@ export class Counter extends Component<any> {
   }
 
   // 初始化状态
-  protected initState() {
+  protected initState(): CounterState {
     return {
       count: 0,
     };

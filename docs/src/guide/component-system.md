@@ -368,11 +368,11 @@ this.styleManager.clearStyles();
 
 ```typescript
 protected getContext() {
-  return (globalThis as any).__APP__?.context;
+  return (globalThis as { __APP__?: { context?: unknown } }).__APP__?.context;
 }
 
 protected get router() {
-  return (globalThis as any).__APP__?.router;
+  return (globalThis as { __APP__?: { router?: unknown } }).__APP__?.router;
 }
 
 protected navigateToAbout() {

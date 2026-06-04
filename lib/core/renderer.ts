@@ -1,5 +1,12 @@
 import { effect, ReactiveEffect, stop } from './reactive';
-import { TemplateEngine } from './template';
+import type { ComponentProps } from './component/base';
+import {
+  eventNameFromProp,
+  isEventProp,
+  parseEventName,
+  setStyleValue,
+  wrapEventHandler,
+} from './renderer/props';
 import {
   ComponentNode,
   EventListeners,
@@ -11,38 +18,19 @@ import {
   isHTMLNode,
   isSlotProvider,
 } from './vnode';
-
-export interface ComponentInstance {
-  mountToNode(): Node;
-  update(): void;
-  unmount(): void;
-  setProps(props: Record<string, any>): void;
-  setAppContext?(context: any): void;
-  getElement(): Node | null;
-  on(eventName: string, listener: (...args: any[]) => void): void;
-}
-
-export interface RenderRuntimeContext {
-  templateEngine: TemplateEngine;
-  appContext?: any;
-  renderer: RendererContext;
-  slots: Record<string, Array<VNode | string>>;
-  registerChild(component: ComponentInstance): void;
-}
-
-export type Renderable = VNode | string;
-
-export interface RenderStrategy<T extends Renderable = Renderable> {
-  matches(vnode: Renderable): vnode is T;
-  mount(vnode: T, context: RenderRuntimeContext): Node;
-  patch(
-    oldVNode: T,
-    newVNode: T,
-    currentNode: Node,
-    context: RenderRuntimeContext
-  ): Node;
-  unmount(vnode: T, currentNode: Node, context: RenderRuntimeContext): void;
-}
+export type {
+  ComponentInstance,
+  RenderRuntimeContext,
+  RenderStrategy,
+  Renderable,
+  RendererHost,
+} from './renderer/types';
+import type {
+  ComponentInstance,
+  RenderRuntimeContext,
+  RenderStrategy,
+  Renderable,
+} from './renderer/types';
 
 export class RendererContext {
   private readonly strategies: RenderStrategy[];
@@ -138,7 +126,10 @@ export class ComponentRenderStrategy implements RenderStrategy<ComponentNode> {
   }
 
   public mount(vnode: ComponentNode, context: RenderRuntimeContext): Node {
-    const instance = new vnode.component(this.createProps(vnode));
+    const ComponentClass = vnode.component as new (
+      props?: ComponentProps
+    ) => ComponentInstance;
+    const instance = new ComponentClass(this.createProps(vnode));
 
     if (context.appContext && instance.setAppContext) {
       instance.setAppContext(context.appContext);
@@ -187,7 +178,7 @@ export class ComponentRenderStrategy implements RenderStrategy<ComponentNode> {
     }
   }
 
-  private createProps(vnode: ComponentNode): Record<string, any> {
+  private createProps(vnode: ComponentNode): ComponentProps {
     return {
       ...(vnode.props ?? {}),
       children: vnode.children ?? [],
@@ -405,7 +396,7 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
     context: RenderRuntimeContext
   ): void {
     Object.keys(oldProps).forEach((key) => {
-      if (this.isEventProp(key) || key in newProps) {
+      if (isEventProp(key) || key in newProps) {
         return;
       }
 
@@ -419,7 +410,7 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
     });
 
     Object.entries(newProps).forEach(([key, value]) => {
-      if (this.isEventProp(key)) {
+      if (isEventProp(key)) {
         return;
       }
 
@@ -431,7 +422,7 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
       if (key === 'style' && typeof value === 'object' && value !== null) {
         element.removeAttribute('style');
         Object.entries(value).forEach(([cssKey, cssValue]) => {
-          (element.style as any)[cssKey] = String(cssValue);
+          setStyleValue(element.style, cssKey, cssValue);
         });
         return;
       }
@@ -607,10 +598,8 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
     const listeners: EventListeners = {};
 
     Object.entries(vnode.props ?? {}).forEach(([key, value]) => {
-      if (this.isEventProp(key) && typeof value === 'function') {
-        listeners[this.eventNameFromProp(key)] = value as (
-          event: Event
-        ) => void;
+      if (isEventProp(key) && typeof value === 'function') {
+        listeners[eventNameFromProp(key)] = value as (event: Event) => void;
       }
     });
 
@@ -641,8 +630,8 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
 
     newKeys.forEach((event) => {
       if (!oldKeys.has(event) || oldListeners[event] !== newListeners[event]) {
-        const { eventName, modifiers } = this.parseEventName(event);
-        const listener = this.wrapEventHandler(newListeners[event], modifiers);
+        const { eventName, modifiers } = parseEventName(event);
+        const listener = wrapEventHandler(newListeners[event], modifiers);
         element.addEventListener(eventName, listener);
         store.set(event, { eventName, listener });
       }
@@ -693,14 +682,14 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
 
     const setValue = (value: string): void => {
       const keys = modelKey.split('.');
-      let target = context.templateEngine.state;
+      let target = context.templateEngine.state as Record<string, unknown>;
 
       for (let index = 0; index < keys.length - 1; index += 1) {
         const key = keys[index];
-        if (target[key] === undefined || target[key] === null) {
+        if (!target[key] || typeof target[key] !== 'object') {
           target[key] = {};
         }
-        target = target[key];
+        target = target[key] as Record<string, unknown>;
       }
 
       target[keys[keys.length - 1]] = value;
@@ -727,12 +716,15 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
     this.trackEffect(element, effectRef);
   }
 
-  private getStateValue(context: RenderRuntimeContext, modelKey: string): any {
-    return modelKey.split('.').reduce((value, key) => {
-      if (value === undefined || value === null) {
+  private getStateValue(
+    context: RenderRuntimeContext,
+    modelKey: string
+  ): unknown {
+    return modelKey.split('.').reduce<unknown>((value, key) => {
+      if (!value || typeof value !== 'object') {
         return undefined;
       }
-      return value[key];
+      return (value as Record<string, unknown>)[key];
     }, context.templateEngine.state);
   }
 
@@ -740,51 +732,5 @@ export class ElementRenderStrategy implements RenderStrategy<HTMLNode> {
     const effects = this.effects.get(element) ?? new Set();
     effects.add(effectRef);
     this.effects.set(element, effects);
-  }
-
-  private isEventProp(key: string): boolean {
-    return /^on[A-Z]/.test(key) || /^on[a-z]/.test(key);
-  }
-
-  private eventNameFromProp(key: string): string {
-    return key.slice(2).toLowerCase();
-  }
-
-  private parseEventName(event: string): {
-    eventName: string;
-    modifiers: Set<string>;
-  } {
-    const [eventName, ...modifiers] = event.split('.');
-    return { eventName, modifiers: new Set(modifiers) };
-  }
-
-  private wrapEventHandler(
-    handler: (event: Event) => void,
-    modifiers: Set<string>
-  ): EventListener {
-    const eventHandler = (event: Event): void => {
-      if (modifiers.has('stop')) {
-        event.stopPropagation();
-      }
-
-      if (modifiers.has('prevent')) {
-        event.preventDefault();
-      }
-
-      if (modifiers.has('self') && event.currentTarget !== event.target) {
-        return;
-      }
-
-      if (modifiers.has('once')) {
-        (event.currentTarget as EventTarget).removeEventListener(
-          event.type,
-          eventHandler
-        );
-      }
-
-      handler(event);
-    };
-
-    return eventHandler;
   }
 }

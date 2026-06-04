@@ -5,7 +5,7 @@ import { TemplateEngine } from './template';
 
 // 插件接口定义
 export interface Plugin {
-  install: (app: FreeApp, ...args: any[]) => void;
+  install: (app: FreeApp, ...args: unknown[]) => void;
   onMounted?: (app: FreeApp) => void;
   onUpdated?: (app: FreeApp) => void;
   onBeforeUnmount?: (app: FreeApp) => void;
@@ -13,8 +13,8 @@ export interface Plugin {
 
 // 泛型化AppOptions接口
 export interface AppOptions<
-  TState = Record<string, any>,
-  TConfig = Record<string, any>,
+  TState = Record<string, unknown>,
+  TConfig = Record<string, unknown>,
 > {
   /** 根组件构造函数 */
   root?: ComponentConstructor;
@@ -27,23 +27,24 @@ export interface AppOptions<
 }
 
 // 泛型化AppContext接口
-export interface AppContext<TConfig = Record<string, any>> {
+export interface AppContext<TConfig = Record<string, unknown>> {
   app: FreeApp;
   version: string;
   config: TConfig;
+  router?: Router;
 }
 
 // 泛型化FreeApp类
 export class FreeApp<
-  TState extends Record<string, any> = Record<string, any>,
-  TConfig extends Record<string, any> = Record<string, any>,
+  TState extends object = Record<string, unknown>,
+  TConfig extends object = Record<string, unknown>,
 > {
   private container: HTMLElement;
-  private rootInstance: Component<any, any> | null = null;
+  private rootInstance: Component | null = null;
   private mounted: boolean = false;
   private templateEngine: TemplateEngine | null = null;
   private readonly appContext: AppContext<TConfig>;
-  private plugins: Array<{ plugin: Plugin; args: any[] }> = [];
+  private plugins: Array<{ plugin: Plugin; args: unknown[] }> = [];
   private unmountedCallback?: () => void;
   public router?: Router;
 
@@ -81,7 +82,7 @@ export class FreeApp<
   /**
    * 使用插件
    */
-  public use(plugin: Plugin, ...args: any[]): this {
+  public use(plugin: Plugin, ...args: unknown[]): this {
     if (typeof plugin.install !== 'function') {
       throw new Error('插件必须提供 install 方法');
     }
@@ -101,7 +102,7 @@ export class FreeApp<
 
     try {
       // 添加全局应用实例
-      (globalThis as any).__APP__ = this;
+      (globalThis as { __APP__?: unknown }).__APP__ = this;
 
       // 确定挂载点
       if (this.options.rootElement) {
@@ -119,12 +120,12 @@ export class FreeApp<
 
         // 设置应用上下文
         if ('setAppContext' in this.rootInstance) {
-          (this.rootInstance as any).setAppContext(this.appContext);
+          this.rootInstance.setAppContext(this.appContext);
         }
 
         // 如果有全局状态，传递给组件
         if (this.options.state && 'setState' in this.rootInstance) {
-          (this.rootInstance as any).setState(this.options.state);
+          this.rootInstance.setState(this.options.state);
         }
 
         this.rootInstance.mount(this.container);
@@ -163,7 +164,7 @@ export class FreeApp<
 
         this.rootInstance = null;
         this.mounted = false;
-        delete (globalThis as any).__APP__;
+        delete (globalThis as { __APP__?: unknown }).__APP__;
       }
 
       // 清除模板引擎
@@ -218,13 +219,13 @@ export class FreeApp<
 
         // 更新组件状态
         if (this.rootInstance && 'setState' in this.rootInstance) {
-          (this.rootInstance as any).setState(state);
+          this.rootInstance.setState(state);
         }
 
         // 更新模板引擎状态
         if (this.templateEngine) {
           // 如果存在templateEngine，更新其状态
-          (this.templateEngine as any).state = this.options.state;
+          this.templateEngine.state = this.options.state;
         }
       }
 
@@ -318,8 +319,8 @@ export class FreeApp<
  * 创建应用实例
  */
 export function createApp<
-  TState extends Record<string, any> = Record<string, any>,
-  TConfig extends Record<string, any> = Record<string, any>,
+  TState extends object = Record<string, unknown>,
+  TConfig extends object = Record<string, unknown>,
 >(options: AppOptions<TState, TConfig> = {}): FreeApp<TState, TConfig> {
   return new FreeApp<TState, TConfig>(options);
 }

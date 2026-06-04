@@ -239,7 +239,9 @@ class FormExample extends Component {
                 value: this.state.name
               },
               listeners: {
-                input: (e: any) => this.state.name = e.target.value
+                input: (e: Event) => {
+                  this.state.name = (e.target as HTMLInputElement).value;
+                }
               }
             }
           ]
@@ -261,7 +263,9 @@ class FormExample extends Component {
                 value: this.state.email
               },
               listeners: {
-                input: (e: any) => this.state.email = e.target.value
+                input: (e: Event) => {
+                  this.state.email = (e.target as HTMLInputElement).value;
+                }
               }
             }
           ]
@@ -282,7 +286,9 @@ class FormExample extends Component {
                 value: this.state.message
               },
               listeners: {
-                input: (e: any) => this.state.message = e.target.value
+                input: (e: Event) => {
+                  this.state.message = (e.target as HTMLTextAreaElement).value;
+                }
               }
             }
           ]
@@ -409,8 +415,10 @@ class ListExample extends Component {
                 value: this.state.newItem
               },
               listeners: {
-                input: (e: any) => this.state.newItem = e.target.value,
-                keyup: (e: any) => {
+                input: (e: Event) => {
+                  this.state.newItem = (e.target as HTMLInputElement).value;
+                },
+                keyup: (e: KeyboardEvent) => {
                   if (e.key === 'Enter') {
                     this.addItem();
                   }

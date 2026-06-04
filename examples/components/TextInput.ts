@@ -9,12 +9,17 @@ interface TextInputProps {
   onEnter?: (value: string) => void;
 }
 
-export class TextInput extends Component {
+interface TextInputState {
+  value: string;
+  isFocused: boolean;
+}
+
+export class TextInput extends Component<TextInputProps, TextInputState> {
   constructor(protected props: TextInputProps = {}) {
     super(props);
   }
 
-  protected initState() {
+  protected initState(): TextInputState {
     return {
       value: this.props.value ?? '',
       isFocused: false,
@@ -78,7 +83,7 @@ export class TextInput extends Component {
   }
 
   protected render(): VNode {
-    const children = [];
+    const children: Array<VNode | string> = [];
 
     if (this.props.label) {
       children.push({

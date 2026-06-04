@@ -1,74 +1,113 @@
 # Free-JS
 
-轻量级纯TypeScript前端框架，提供响应式系统、组件化和路由功能。
+轻量级纯 TypeScript 前端框架，提供响应式系统、类组件、策略化渲染和路由能力。
 
 ## 特性
 
-- ✨ 纯TypeScript实现，提供完整的类型支持
-- 🐇 Bun 原生工具链：包管理、测试、构建和文档服务均由 Bun 驱动
-- ⚡ 高效的响应式系统
-- 🧩 组件化开发模式
-- 🛣️ 内置路由功能
-- 💅 样式管理系统
-- 📦 轻量级设计，无外部依赖
+- 纯 TypeScript 实现，公开 API 提供类型定义
+- Bun 原生工具链：安装、测试、构建、示例服务和文档服务均由 Bun 驱动
+- 响应式系统：`reactive`、`effect`、`computed`
+- 面向对象组件模型：`Component<Props, State>`、生命周期、事件、插槽
+- 策略模式渲染层：文本、元素、组件、插槽按 VNode 类型分发
+- 内置路由：`createRouter`、`RouterView`、`RouterLink`
+- 轻量级运行时，生产包无外部运行时依赖
 
 ## 安装
 
 ```bash
-# 使用 Bun
 bun add free-js
 ```
 
 ## 快速开始
 
-### 创建应用
-
 ```typescript
-import { createApp, Component, reactive } from 'free-js';
+import { Component, VNode, createApp, computed, reactive } from 'free-js';
 
-// 创建一个简单的组件
-class App extends Component {
-  protected initState() {
+interface AppState {
+  count: number;
+  version: string;
+}
+
+class App extends Component<Record<string, never>, AppState> {
+  protected initState(): AppState {
     return {
-      count: 0
+      count: 0,
+      version: '1.0.0'
     };
   }
 
-  protected initStyles() {
-    this.styleManager.addStyle('.app', {
-      selector: '.app',
-      properties: {
-        textAlign: 'center',
-        padding: '20px'
-      }
-    });
-  }
+  protected initStyles(): void {}
 
-  protected render() {
+  protected render(): VNode {
     return {
-      tag: 'div',
+      tag: 'main',
       props: { className: 'app' },
       children: [
-        {
-          tag: 'h1',
-          children: [`计数: {{count}}`]
-        },
+        { tag: 'h1', children: ['Free-JS'] },
+        { tag: 'p', children: [`version: '{{version}}'`] },
         {
           tag: 'button',
-          props: { className: 'btn' },
           listeners: {
-            click: () => this.state.count++
+            click: () => {
+              this.state.count += 1;
+            }
           },
-          children: ['增加计数']
+          children: [`count: {{count}}`]
         }
       ]
     };
   }
 }
 
-// 创建并挂载应用
-const app = createApp({ root: App });
+const state = reactive({ ready: true });
+const status = computed(() => (state.ready ? 'ready' : 'pending'));
+
+const app = createApp({ root: App, rootElement: '#app', state });
 app.mount();
+
+console.log(status.value);
+```
+
+## 路由
+
+```typescript
+import { Component, VNode, createApp } from 'free-js';
+import { RouterLink, RouterView, createRouter } from 'free-js/router';
+
+class Layout extends Component {
+  protected initState(): object {
+    return {};
+  }
+
+  protected initStyles(): void {}
+
+  protected render(): VNode {
+    return {
+      tag: 'main',
+      children: [
+        {
+          component: RouterLink,
+          props: { to: '/', children: ['首页'] }
+        },
+        {
+          component: RouterLink,
+          props: { to: '/users/42', children: ['用户'] }
+        },
+        { component: RouterView }
+      ]
+    };
+  }
+}
+
+const router = createRouter({
+  mode: 'history',
+  routes: [
+    { path: '/', component: HomePage },
+    { path: '/users/:id', component: UserPage, meta: { title: '用户详情' } }
+  ]
+});
+
+createApp({ root: Layout, rootElement: '#app' }).use(router).mount();
 ```
 
 ## 开发命令
@@ -81,141 +120,46 @@ bun run dev
 bun run docs
 ```
 
-## 响应式系统
+## 公开 API
 
-```typescript
-import { reactive, effect } from 'free-js';
+主入口 `free-js`：
 
-const state = reactive({
-  name: 'Free-JS',
-  version: '0.0.1'
-});
+- `createApp(options)`
+- `Component<Props, State>`
+- `VNode`
+- `h()` / `createComponent()` / `slot()`
+- `reactive()` / `readonly()`
+- `effect()` / `stop()`
+- `computed()`
+- `ref()` / `isRef()` / `unref()`
+- `version`，当前为 `1.0.0`
 
-effect(() => {
-  console.log(`${state.name} v${state.version}`);
-});
+路由入口 `free-js/router`：
 
-// 当状态改变时，effect会自动重新执行
-state.version = '0.0.2'; // 输出: Free-JS v0.0.2
+- `createRouter({ routes, mode, base })`
+- `Router`
+- `RouterView`
+- `RouterLink`
+- `useRouter()`
+- `RouteRecord`
+- `RouteLocation`
+
+样式入口 `free-js/style`：
+
+- `StyleManager`
+
+## 发布前检查
+
+```bash
+bun test
+bunx tsc --noEmit
+bun run build
+bun pm pack --dry-run
 ```
 
-## 组件系统
+## 贡献
 
-### 基本组件
-
-```typescript
-import { Component } from 'free-js';
-
-class MyComponent extends Component {
-  protected initState() {
-    return {
-      message: 'Hello, Free-JS!'
-    };
-  }
-
-  protected initStyles() {
-    this.styleManager.addStyle('.my-component', {
-      selector: '.my-component',
-      properties: {
-        color: '#333',
-        fontSize: '16px'
-      }
-    });
-  }
-
-  protected render() {
-    return {
-      tag: 'div',
-      props: { className: 'my-component' },
-      children: [`{{message}}`]
-    };
-  }
-}
-```
-
-### 组件嵌套
-
-```typescript
-class ParentComponent extends Component {
-  protected render() {
-    return {
-      tag: 'div',
-      children: [
-        {
-          tag: 'h2',
-          children: ['父组件']
-        },
-        {
-          component: ChildComponent,
-          props: {
-            title: '子组件'
-          }
-        }
-      ]
-    };
-  }
-}
-```
-
-## 路由系统
-
-```typescript
-import { createApp } from 'free-js';
-import { createRouter } from 'free-js/router';
-
-// 创建路由实例
-const router = createRouter([
-  {
-    path: '/',
-    component: HomeComponent
-  },
-  {
-    path: '/about',
-    component: AboutComponent
-  }
-]);
-
-// 创建应用并使用路由插件
-const app = createApp({ root: App });
-app.use(router);
-app.mount();
-```
-
-## API 参考
-
-### createApp(options)
-
-创建应用实例。
-
-- **options**: 应用配置
-  - **root**: 根组件类
-
-### Component
-
-组件基类，所有自定义组件都应继承此类。
-
-- **initState()**: 初始化组件状态
-- **initStyles()**: 初始化组件样式
-- **render()**: 渲染组件，返回虚拟DOM节点
-- **mount(container)**: 挂载组件到DOM
-- **update()**: 更新组件
-
-### reactive(target)
-
-创建响应式对象。
-
-- **target**: 要转换的对象
-- **返回值**: 响应式代理对象
-
-### effect(fn)
-
-创建副作用函数。
-
-- **fn**: 副作用函数
-
-## 贡献指南
-
-欢迎提交Issue和Pull Request！
+欢迎提交 Issue 和 Pull Request。开源发布前请确保测试、类型检查和构建均通过。
 
 ## 许可证
 

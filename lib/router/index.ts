@@ -1,13 +1,21 @@
-import { Component, ComponentConstructor } from '../core/component';
+import { AnyComponentConstructor, Component } from '../core/component';
 import { FreeApp } from '../core/app';
 import type { VNode } from '../core/vnode';
 import { setRouter } from './instance';
+import {
+  createRouterHref,
+  getBrowserLocation,
+  navigateBrowser,
+} from './history';
+import { matchRoute } from './matcher';
+
+export type RouteMeta = Record<string, unknown>;
 
 export interface RouteRecord {
   path: string;
-  component: ComponentConstructor;
+  component: AnyComponentConstructor;
   name?: string;
-  meta?: Record<string, any>;
+  meta?: RouteMeta;
 }
 
 export interface RouterOptions {
@@ -22,18 +30,13 @@ export interface RouteLocation {
   params: Record<string, string>;
   fullPath: string;
   name?: string;
-  meta?: Record<string, any>;
+  meta?: RouteMeta;
 }
 
 export type RouteChangeListener = (
   to: RouteLocation,
   from: RouteLocation | null
 ) => void;
-
-interface RouteMatch {
-  route: RouteRecord;
-  params: Record<string, string>;
-}
 
 export class Router {
   protected currentRoute: RouteRecord | null = null;
@@ -63,8 +66,8 @@ export class Router {
     app.router = this;
     setRouter(this);
 
-    const context = app.getContext();
-    (context as any).router = this;
+    const context = app.getContext() as { router?: Router };
+    context.router = this;
 
     this.resolveCurrentRoute();
   }
@@ -132,10 +135,7 @@ export class Router {
   }
 
   public createHref(path: string): string {
-    const normalizedPath = this.normalizePath(path);
-    const fullPath =
-      this.base === '/' ? normalizedPath : this.base + normalizedPath;
-    return this.mode === 'hash' ? `#${fullPath}` : fullPath;
+    return createRouterHref(path, this.mode, this.base);
   }
 
   public destroy(): void {
@@ -152,23 +152,7 @@ export class Router {
       throw new Error('Path must be a non-empty string');
     }
 
-    const normalizedPath = this.normalizePath(path);
-    const fullPath =
-      this.base === '/' ? normalizedPath : this.base + normalizedPath;
-
-    if (this.mode === 'history') {
-      if (replace) {
-        window.history.replaceState({}, '', fullPath);
-      } else {
-        window.history.pushState({}, '', fullPath);
-      }
-    } else if (replace) {
-      const href = window.location.href.split('#')[0];
-      window.location.replace(`${href}#${fullPath}`);
-    } else {
-      window.location.hash = fullPath;
-    }
-
+    navigateBrowser(path, replace, this.mode, this.base);
     this.handleRouteChange();
   }
 
@@ -213,7 +197,7 @@ export class Router {
 
   private resolveCurrentRoute(): RouteLocation {
     const location = this.getCurrentLocation();
-    const match = this.matchRoute(location.path);
+    const match = matchRoute(this.routes, location.path);
     const route = match?.route ?? null;
 
     this.currentRoute = route;
@@ -228,119 +212,7 @@ export class Router {
   }
 
   private getCurrentLocation(): RouteLocation {
-    let path: string;
-    let fullPath: string;
-
-    if (this.mode === 'history') {
-      fullPath = window.location.pathname + window.location.search;
-      path = window.location.pathname;
-    } else {
-      const hash = window.location.hash;
-      fullPath = hash || '#/';
-      path = fullPath.startsWith('#') ? fullPath.slice(1) : fullPath;
-    }
-
-    if (path.startsWith(this.base) && this.base !== '/' && path !== '/') {
-      path = path.slice(this.base.length);
-    }
-
-    path = this.normalizePath(path);
-
-    return {
-      path,
-      fullPath,
-      query: this.parseQuery(
-        this.mode === 'hash'
-          ? (path.split('?')[1] ?? '')
-          : window.location.search
-      ),
-      params: {},
-    };
-  }
-
-  private parseQuery(queryString: string): Record<string, string> {
-    const query: Record<string, string> = {};
-    const normalizedQuery = queryString.startsWith('?')
-      ? queryString.slice(1)
-      : queryString;
-
-    if (!normalizedQuery) {
-      return query;
-    }
-
-    normalizedQuery.split('&').forEach((param) => {
-      const [key, value] = param.split('=');
-      if (key) {
-        query[decodeURIComponent(key)] = value ? decodeURIComponent(value) : '';
-      }
-    });
-
-    return query;
-  }
-
-  private matchRoute(path: string): RouteMatch | null {
-    const normalizedPath = this.normalizePath(path.split('?')[0]);
-
-    for (const route of this.routes) {
-      const params = this.matchRoutePath(route.path, normalizedPath);
-      if (params) {
-        return { route, params };
-      }
-    }
-
-    const fallback = this.routes.find((route) => route.path === '/');
-    return fallback ? { route: fallback, params: {} } : null;
-  }
-
-  private matchRoutePath(
-    routePath: string,
-    currentPath: string
-  ): Record<string, string> | null {
-    const routeSegments = this.getPathSegments(routePath);
-    const currentSegments = this.getPathSegments(currentPath);
-
-    if (routeSegments.length !== currentSegments.length) {
-      return null;
-    }
-
-    const params: Record<string, string> = {};
-
-    for (let index = 0; index < routeSegments.length; index += 1) {
-      const routeSegment = routeSegments[index];
-      const currentSegment = currentSegments[index];
-
-      if (routeSegment.startsWith(':')) {
-        const paramName = routeSegment.slice(1);
-        if (!paramName) {
-          return null;
-        }
-        params[decodeURIComponent(paramName)] =
-          decodeURIComponent(currentSegment);
-        continue;
-      }
-
-      if (routeSegment !== currentSegment) {
-        return null;
-      }
-    }
-
-    return params;
-  }
-
-  private getPathSegments(path: string): string[] {
-    const normalizedPath = this.normalizePath(path);
-    if (normalizedPath === '/') {
-      return [];
-    }
-
-    return normalizedPath.split('/').filter(Boolean);
-  }
-
-  private normalizePath(path: string): string {
-    if (!path.startsWith('/')) {
-      return `/${path}`;
-    }
-    return path || '/';
+    return getBrowserLocation(this.mode, this.base);
   }
 
   private isSameLocation(
@@ -372,10 +244,14 @@ export interface RouterLinkProps {
   children?: Array<VNode | string>;
 }
 
-export class RouterLink extends Component<RouterLinkProps> {
+interface RouterLinkState {
+  currentPath: string;
+}
+
+export class RouterLink extends Component<RouterLinkProps, RouterLinkState> {
   private unsubscribe?: () => void;
 
-  protected initState(): object {
+  protected initState(): RouterLinkState {
     const router = this.router as Router | undefined;
     return {
       currentPath: router?.getCurrentRoute()?.path ?? window.location.pathname,
@@ -427,14 +303,19 @@ export class RouterLink extends Component<RouterLinkProps> {
   }
 }
 
-export class RouterView extends Component {
+interface RouterViewState {
+  route: RouteLocation | null;
+  record: RouteRecord | null;
+}
+
+export class RouterView extends Component<object, RouterViewState> {
   private unsubscribe?: () => void;
 
-  protected initState(): object {
+  protected initState(): RouterViewState {
     const router = this.router as Router | undefined;
     return {
-      route: router?.getCurrentRoute(),
-      record: router?.getCurrentRouteRecord(),
+      route: router?.getCurrentRoute() ?? null,
+      record: router?.getCurrentRouteRecord() ?? null,
     };
   }
 

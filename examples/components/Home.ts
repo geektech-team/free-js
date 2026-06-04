@@ -4,8 +4,20 @@ import { Navigation } from './Navigation';
 import { TextInput } from './TextInput';
 import { SlotDemo } from './SlotDemo';
 
-export class Home extends Component {
-  protected initState() {
+interface NavigationLink {
+  path: string;
+  text: string;
+}
+
+interface HomeState {
+  title: string;
+  navigationLinks: NavigationLink[];
+  lastNavigation: string;
+  inputValue: string;
+}
+
+export class Home extends Component<object, HomeState> {
+  protected initState(): HomeState {
     return {
       title: 'Free Framework 示例',
       navigationLinks: [

@@ -1,15 +1,20 @@
-// 定义响应式对象接口
-export interface ReactiveEffect {
-  (): any;
-  deps: Set<ReactiveEffect>[];
-  id: number;
-  active: boolean;
-  scheduler?: (effect: ReactiveEffect) => void;
-}
+import {
+  ComputedRef,
+  IS_REACTIVE,
+  IS_READONLY,
+  MUTATING_ARRAY_METHODS,
+  ReactiveEffect,
+  ReactiveEffectOptions,
+  hasReactiveFlag,
+  isObject,
+} from './reactive/types';
 
-// 定义响应式标记
-const IS_REACTIVE = Symbol('is_reactive');
-const IS_READONLY = Symbol('is_readonly');
+export type {
+  ComputedRef,
+  ReactiveEffect,
+  ReactiveEffectOptions,
+} from './reactive/types';
+
 let effectId = 0;
 
 // 响应式系统
@@ -24,17 +29,6 @@ export class ReactiveSystem {
   private reactiveMap = new WeakMap<object, object>();
   private readonlyMap = new WeakMap<object, object>();
 
-  // 数组的变异方法
-  private arrayMethods = [
-    'push',
-    'pop',
-    'shift',
-    'unshift',
-    'splice',
-    'sort',
-    'reverse',
-  ];
-
   private constructor() {}
 
   public static getInstance(): ReactiveSystem {
@@ -46,7 +40,7 @@ export class ReactiveSystem {
 
   public reactive<T extends object>(target: T): T {
     // 检查输入参数
-    if (target === null || typeof target !== 'object') {
+    if (!isObject(target)) {
       console.warn('reactive: target must be an object');
       return target;
     }
@@ -90,7 +84,7 @@ export class ReactiveSystem {
       },
       set: (target, key: string | symbol, value) => {
         // 检查是否是只读的
-        if ((target as any)[IS_READONLY]) {
+        if (hasReactiveFlag(target, IS_READONLY)) {
           console.warn(`Cannot set property ${String(key)} on readonly object`);
           return false;
         }
@@ -102,7 +96,7 @@ export class ReactiveSystem {
           value &&
           typeof value === 'object' &&
           !Array.isArray(value) &&
-          !(value as any)[IS_REACTIVE]
+          !hasReactiveFlag(value, IS_REACTIVE)
         ) {
           value = this.reactive(value);
         }
@@ -117,7 +111,7 @@ export class ReactiveSystem {
       },
       deleteProperty: (target, key: string | symbol) => {
         // 检查是否是只读的
-        if ((target as any)[IS_READONLY]) {
+        if (hasReactiveFlag(target, IS_READONLY)) {
           console.warn(
             `Cannot delete property ${String(key)} on readonly object`
           );
@@ -142,7 +136,7 @@ export class ReactiveSystem {
   /**
    * 创建响应式数组
    */
-  private createReactiveArray<T extends any[]>(target: T): T {
+  private createReactiveArray<T extends unknown[]>(target: T): T {
     // 如果目标已经有对应的响应式对象，返回已存在的代理
     if (this.reactiveMap.has(target)) {
       return this.reactiveMap.get(target) as T;
@@ -164,10 +158,15 @@ export class ReactiveSystem {
         const value = Reflect.get(target, key);
 
         // 处理数组的变异方法
-        if (typeof key === 'string' && this.arrayMethods.includes(key)) {
-          return (...args: any[]) => {
+        if (
+          typeof key === 'string' &&
+          MUTATING_ARRAY_METHODS.includes(
+            key as (typeof MUTATING_ARRAY_METHODS)[number]
+          )
+        ) {
+          return (...args: unknown[]) => {
             // 执行原始方法
-            const arrayMethod = value as (...methodArgs: any[]) => unknown;
+            const arrayMethod = value as (...methodArgs: unknown[]) => unknown;
             const result = arrayMethod.apply(target, args);
             // 触发数组更新
             this.trigger(target, 'length');
@@ -180,7 +179,7 @@ export class ReactiveSystem {
       },
       set: (target, key: string | symbol, value) => {
         // 检查是否是只读的
-        if ((target as any)[IS_READONLY]) {
+        if (hasReactiveFlag(target, IS_READONLY)) {
           console.warn(`Cannot set property ${String(key)} on readonly object`);
           return false;
         }
@@ -192,7 +191,7 @@ export class ReactiveSystem {
           value &&
           typeof value === 'object' &&
           !Array.isArray(value) &&
-          !(value as any)[IS_REACTIVE]
+          !hasReactiveFlag(value, IS_REACTIVE)
         ) {
           value = this.reactive(value);
         }
@@ -211,7 +210,7 @@ export class ReactiveSystem {
       },
       deleteProperty: (target, key: string | symbol) => {
         // 检查是否是只读的
-        if ((target as any)[IS_READONLY]) {
+        if (hasReactiveFlag(target, IS_READONLY)) {
           console.warn(
             `Cannot delete property ${String(key)} on readonly object`
           );
@@ -237,13 +236,13 @@ export class ReactiveSystem {
 
   public readonly<T extends object>(target: T): Readonly<T> {
     // 检查输入参数
-    if (target === null || typeof target !== 'object') {
+    if (!isObject(target)) {
       console.warn('readonly: target must be an object');
       return target;
     }
 
     // 如果传入的是已经是只读响应式对象，直接返回
-    if ((target as any)[IS_READONLY]) {
+    if (hasReactiveFlag(target, IS_READONLY)) {
       return target as Readonly<T>;
     }
 
@@ -281,16 +280,13 @@ export class ReactiveSystem {
     return proxy as Readonly<T>;
   }
 
-  public effect<T = any>(
+  public effect<T = unknown>(
     fn: () => T,
-    options?: {
-      lazy?: boolean;
-      scheduler?: (effect: ReactiveEffect) => void;
-    }
-  ): ReactiveEffect {
+    options?: ReactiveEffectOptions
+  ): ReactiveEffect<T> {
     const { lazy = false, scheduler } = options || {};
 
-    const effectFn: ReactiveEffect = () => {
+    const effectFn: ReactiveEffect<T> = () => {
       if (!effectFn.active) {
         return fn();
       }
@@ -324,9 +320,7 @@ export class ReactiveSystem {
     return effectFn;
   }
 
-  public computed<T>(getter: () => T): {
-    value: T;
-  } {
+  public computed<T>(getter: () => T): ComputedRef<T> {
     let dirty = true;
     let value: T;
     const computedTarget = {};
@@ -428,19 +422,14 @@ export function readonly<T extends object>(target: T): Readonly<T> {
   return ReactiveSystem.getInstance().readonly(target);
 }
 
-export function effect<T = any>(
+export function effect<T = unknown>(
   fn: () => T,
-  options?: {
-    lazy?: boolean;
-    scheduler?: (effect: ReactiveEffect) => void;
-  }
-): ReactiveEffect {
+  options?: ReactiveEffectOptions
+): ReactiveEffect<T> {
   return ReactiveSystem.getInstance().effect(fn, options);
 }
 
-export function computed<T>(getter: () => T): {
-  value: T;
-} {
+export function computed<T>(getter: () => T): ComputedRef<T> {
   return ReactiveSystem.getInstance().computed(getter);
 }
 
@@ -449,11 +438,11 @@ export function stop(effect: ReactiveEffect): void {
 }
 
 // 工具函数：判断是否是响应式对象
-export function isReactive(value: any): boolean {
-  return !!(value && typeof value === 'object' && (value as any)[IS_REACTIVE]);
+export function isReactive(value: unknown): boolean {
+  return isObject(value) && hasReactiveFlag(value, IS_REACTIVE);
 }
 
 // 工具函数：判断是否是只读响应式对象
-export function isReadonly(value: any): boolean {
-  return !!(value && typeof value === 'object' && (value as any)[IS_READONLY]);
+export function isReadonly(value: unknown): boolean {
+  return isObject(value) && hasReactiveFlag(value, IS_READONLY);
 }

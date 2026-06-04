@@ -1,8 +1,16 @@
 import { Component, VNode } from '../../lib';
 import { StyleOptions } from '../../lib/style/StyleManager';
 
-export class SlotDemo extends Component {
-  protected initState() {
+interface SlotDemoState {
+  title: string;
+  content: string;
+  footerText: string;
+  counter: number;
+  messages: string[];
+}
+
+export class SlotDemo extends Component<object, SlotDemoState> {
+  protected initState(): SlotDemoState {
     return {
       title: '插槽示例',
       content:

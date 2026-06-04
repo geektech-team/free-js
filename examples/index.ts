@@ -50,7 +50,7 @@ const router = createRouter({
 
 // 路由变化时更新页面标题
 router.onRouteChange((to) => {
-  document.title = to.meta?.title || 'Free.js Framework';
+  document.title = String(to.meta?.title ?? 'Free.js Framework');
 });
 
 // 创建应用实例
@@ -81,4 +81,4 @@ app.onUnmounted(() => {
 });
 
 // 为了演示，导出应用实例
-(window as any).app = app;
+(window as Window & { app?: typeof app }).app = app;

@@ -8,22 +8,24 @@ import {
 import { TemplateEngine } from '../template';
 import type { VNode } from '../vnode';
 
-export interface ComponentProps {
-  [key: string]: any;
-}
+export type ComponentProps = object;
 
-export interface ComponentState {
-  [key: string]: any;
-}
+export type ComponentState = object;
+
+export type ComponentEventListener = (...args: unknown[]) => void;
 
 export type ComponentConstructor<
   TProps extends ComponentProps = ComponentProps,
-  TState extends ComponentState = any,
+  TState extends ComponentState = ComponentState,
 > = new (props?: TProps) => Component<TProps, TState>;
+
+export type AnyComponentConstructor = new (
+  props?: never
+) => Component<ComponentProps, ComponentState>;
 
 export abstract class Component<
   TProps extends ComponentProps = ComponentProps,
-  TState extends ComponentState = any,
+  TState extends ComponentState = ComponentState,
 > implements ComponentInstance
 {
   private vnode: VNode | null = null;
@@ -31,12 +33,10 @@ export abstract class Component<
   private readonly renderer = new RendererContext();
   private readonly templateEngine: TemplateEngine;
   private readonly childComponents = new Set<ComponentInstance>();
-  private readonly eventListeners: Record<
-    string,
-    Set<(...args: any[]) => void>
-  > = {};
+  private readonly eventListeners: Record<string, Set<ComponentEventListener>> =
+    {};
   private readonly updateEffect: ReactiveEffect;
-  private appContext: any = null;
+  private appContext: unknown = null;
 
   protected styleManager: StyleManager;
   public state: TState;
@@ -148,7 +148,7 @@ export abstract class Component<
     Object.assign(this.state, state);
   }
 
-  public setAppContext(context: any): void {
+  public setAppContext(context: unknown): void {
     this.appContext = context;
     this.childComponents.forEach((child) => {
       child.setAppContext?.(context);
@@ -171,28 +171,28 @@ export abstract class Component<
 
   protected onUnmounted(): void {}
 
-  protected getContext(): any {
+  protected getContext(): unknown {
     return this.appContext;
   }
 
   protected get router() {
-    return this.appContext?.router ?? (globalThis as any).__APP__?.router;
+    return this.getRouterFrom(this.appContext) ?? this.getRouterFromGlobalApp();
   }
 
-  protected emit(eventName: string, ...args: any[]): void {
+  protected emit(eventName: string, ...args: unknown[]): void {
     this.eventListeners[eventName]?.forEach((listener) => {
       listener(...args);
     });
   }
 
-  public on(eventName: string, listener: (...args: any[]) => void): void {
+  public on(eventName: string, listener: ComponentEventListener): void {
     if (!this.eventListeners[eventName]) {
       this.eventListeners[eventName] = new Set();
     }
     this.eventListeners[eventName].add(listener);
   }
 
-  public off(eventName: string, listener: (...args: any[]) => void): void {
+  public off(eventName: string, listener: ComponentEventListener): void {
     this.eventListeners[eventName]?.delete(listener);
   }
 
@@ -212,7 +212,7 @@ export abstract class Component<
   private collectSlots(): Record<string, Array<VNode | string>> {
     const slots: Record<string, Array<VNode | string>> = { default: [] };
     const children =
-      ((this.props as ComponentProps).children as Array<VNode | string>) ?? [];
+      (this.props as { children?: Array<VNode | string> }).children ?? [];
 
     children.forEach((child) => {
       const slotName = this.getSlotName(child);
@@ -247,6 +247,19 @@ export abstract class Component<
 
   private trackStateProperties(): void {
     this.trackReactiveValue(this.state, new Set<object>());
+  }
+
+  private getRouterFrom(value: unknown): unknown {
+    if (!value || typeof value !== 'object' || !('router' in value)) {
+      return undefined;
+    }
+
+    return (value as { router?: unknown }).router;
+  }
+
+  private getRouterFromGlobalApp(): unknown {
+    const globalApp = (globalThis as { __APP__?: unknown }).__APP__;
+    return this.getRouterFrom(globalApp);
   }
 
   private trackReactiveValue(value: unknown, seen: Set<object>): void {

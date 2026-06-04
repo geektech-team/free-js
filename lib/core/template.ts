@@ -10,7 +10,7 @@ export class TemplateEngine {
   private bindings: TemplateBinding[] = [];
   private readonly templateRegex = /{{(.*?)}}/g;
 
-  constructor(public state: any) {
+  constructor(public state: object) {
     if (!state || typeof state !== 'object') {
       throw new Error('TemplateEngine requires a valid state object');
     }
@@ -106,18 +106,18 @@ export class TemplateEngine {
   /**
    * 从状态对象中获取值，支持嵌套属性访问
    */
-  private getValueFromState(keyPath: string): any {
+  private getValueFromState(keyPath: string): unknown {
     if (!keyPath) return undefined;
 
     // 支持嵌套属性访问，如 'user.name'
     const keys = keyPath.split('.');
-    let value = this.state;
+    let value: unknown = this.state;
 
     for (const key of keys) {
-      if (value === undefined || value === null) {
+      if (!value || typeof value !== 'object') {
         return undefined;
       }
-      value = value[key];
+      value = (value as Record<string, unknown>)[key];
     }
 
     return value;

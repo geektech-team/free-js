@@ -13,12 +13,17 @@ interface NavigationProps {
   onNavigate?: (path: string) => void;
 }
 
-export class Navigation extends Component {
+interface NavigationState {
+  links: NavLink[];
+  currentPath: string;
+}
+
+export class Navigation extends Component<NavigationProps, NavigationState> {
   constructor(protected props: NavigationProps = {}) {
     super(props);
   }
 
-  protected initState() {
+  protected initState(): NavigationState {
     return {
       links: this.props.links ?? [
         { path: '/', text: '首页' },
